@@ -25,3 +25,15 @@
 *   **真实订单起点的 24 小时分布**：采用六边形 3D 柱状图展示各个区块内不同时间段的发单热度。
 *   **真实订单起始点 OD 的 24 小时分布**：采用飞线（Arc）图展示订单起终点之间的空间流动轨迹与聚集度。
 *   **实际订单和预测结果比较**：通过双屏联动视图，直观对比真实发生的订单热度分布与模型预测热度分布，验证高度拟合。
+
+### 最终交付版
+
+当前仓库已整理出最终交付版图件，适合直接用于汇报封面、成果展示页和附录：
+
+*   [H3 结果总览仪表盘](../models/picture/jtjm_model_results_dashboard_dark.png)：采用深色地图、右侧图例和底部时间轴的总览页，突出 H3 需求热度与时序变化。
+*   [H3 分辨率消融表](../models/picture/h3_resolution_ablation_table.png)：展示不同网格分辨率下的模型平衡结果。
+*   [H3 分辨率与稀疏性权衡图](../models/picture/h3_resolution_sparsity_tradeoff.png)：说明空间粒度、零值比例与训练成本之间的关系。
+*   [V1/V2/V3 对比表](../models/picture/h3_v1_v2_v3_comparison_table.png)：汇总三代模型的总体性能。
+*   [V2-H3 特征重要性 Top 15](../models/picture/v2_h3_feature_importance_top15.png)：展示核心解释特征。
+
+建议在正式报告中按“方法设计 -> 消融实验 -> 结果展示 -> 可视化总览”的顺序编排，上述图片可直接作为对应章节配图。

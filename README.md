@@ -29,3 +29,22 @@ V3（`src/train_xgboost_v3.py`）引入了深度学习作为特征提取前端�
 ## 进度
 
 目前可视化之前的工作已经完成，所有结果都在models文件夹下，需要展示的图片在models/picture文件夹。
+
+## 最终交付物
+
+以下文件是当前仓库的最终展示入口，适合直接用于汇报或页面说明：
+
+- [models/picture/jtjm_model_results_dashboard_dark.png](models/picture/jtjm_model_results_dashboard_dark.png) - H3 结果总览仪表盘，包含地图、图例和时间轴。
+- [models/picture/h3_resolution_ablation_table.png](models/picture/h3_resolution_ablation_table.png) - H3 分辨率消融表。
+- [models/picture/h3_resolution_sparsity_tradeoff.png](models/picture/h3_resolution_sparsity_tradeoff.png) - 分辨率与稀疏性权衡图。
+- [models/picture/h3_resolution_ablation_trends.png](models/picture/h3_resolution_ablation_trends.png) - 分辨率指标趋势图。
+- [models/picture/h3_v1_v2_v3_comparison_table.png](models/picture/h3_v1_v2_v3_comparison_table.png) - V1/V2/V3 对比表。
+- [models/picture/v2_h3_feature_category_contribution.png](models/picture/v2_h3_feature_category_contribution.png) - 特征类别贡献环图。
+- [models/picture/v2_h3_feature_group_breakdown.png](models/picture/v2_h3_feature_group_breakdown.png) - 特征组分解图。
+- [models/picture/v2_h3_feature_importance_top15.png](models/picture/v2_h3_feature_importance_top15.png) - V2-H3 Top 15 特征重要性。
+
+如需重新生成仪表盘，可运行：
+
+```bash
+python3 src/visualize_model_results.py
+```

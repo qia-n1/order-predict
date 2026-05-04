@@ -38,6 +38,3 @@ build/
 *.json
 *.geojson
 data/
-
-# Visualization outputs
-visualization/output/

@@ -1,0 +1,2 @@
+# Plotly 交互可视化（与仓库根目录 requirements.txt 叠加安装）
+plotly>=5.18,<7
