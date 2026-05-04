@@ -1,0 +1,43 @@
+# Virtual environment
+.venv/
+venv/
+env/
+*.env/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Data files
+*.csv
+*.json
+*.geojson
+data/
+
+# Visualization outputs
+visualization/output/
