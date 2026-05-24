@@ -32,9 +32,3 @@ logs/
 dist/
 build/
 *.egg-info/
-
-# Data files
-*.csv
-*.json
-*.geojson
-data/
