@@ -16,6 +16,18 @@ NYC_LATITUDE = 40.7128
 NYC_LONGITUDE = -74.0060
 
 
+def _empty_weather(time_slots: pd.Series) -> pd.DataFrame:
+    slots = time_slots.drop_duplicates().sort_values()
+    empty = pd.DataFrame({"time_slot": slots})
+    for col in ["temperature", "apparent_temperature", "precipitation", "rain",
+                "cloud_cover", "wind_speed", "humidity", "weather_code",
+                "weather_clear", "weather_cloudy", "weather_fog", "weather_drizzle",
+                "weather_rain", "weather_snow", "weather_thunder",
+                "is_precipitating", "is_hot", "is_humid"]:
+        empty[col] = 0.0
+    return empty
+
+
 def parse_args() -> argparse.Namespace:
     project_root = Path(__file__).resolve().parent.parent
     parser = argparse.ArgumentParser(description="Train an XGBoost demand forecasting model with external features")
@@ -44,7 +56,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--weight-very-high", type=float, default=10.0, help="Training weight for y >= very-high-threshold rows")
     parser.add_argument("--high-count-threshold", type=float, default=4.0, help="Threshold for medium/high-demand metrics and weighting")
     parser.add_argument("--very-high-count-threshold", type=float, default=8.0, help="Threshold for highest training weight tier")
+    parser.add_argument("--test-start-date", type=str, default=None, help="Date boundary for test split, e.g. '2015-06-24'. Overrides ratio-based split.")
+    parser.add_argument("--weather-cache", type=Path, default=None, help="Cached weather CSV; fetches from API only when missing")
     return parser.parse_args()
+
 
 
 def load_orders(input_path: Path) -> pd.DataFrame:
@@ -94,7 +109,7 @@ def weather_code_to_flags(weather_code: int) -> dict[str, int]:
     }
 
 
-def fetch_weather_features(start_time: pd.Timestamp, end_time: pd.Timestamp) -> pd.DataFrame:
+def fetch_weather_features(start_time: pd.Timestamp, end_time: pd.Timestamp, time_slots: pd.Series) -> pd.DataFrame:
     query = urlencode(
         {
             "latitude": NYC_LATITUDE,
@@ -106,8 +121,13 @@ def fetch_weather_features(start_time: pd.Timestamp, end_time: pd.Timestamp) -> 
         }
     )
     url = f"https://archive-api.open-meteo.com/v1/archive?{query}"
-    with urlopen(url, timeout=60) as response:
-        payload = json.load(response)
+
+    try:
+        with urlopen(url, timeout=60) as response:
+            payload = json.load(response)
+    except Exception as exc:
+        print(f"Weather API unreachable ({exc}), using empty weather features")
+        return _empty_weather(time_slots)
 
     hourly = pd.DataFrame(payload["hourly"])
     hourly["time_slot"] = pd.to_datetime(hourly["time"])
@@ -240,17 +260,34 @@ def add_target_encoding(train_df: pd.DataFrame, other_df: pd.DataFrame) -> pd.Da
     return encoded
 
 
-def make_splits(panel: pd.DataFrame, train_ratio: float, valid_ratio: float) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def make_splits(panel: pd.DataFrame, train_ratio: float, valid_ratio: float, test_start_date: str | None = None) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     unique_slots = panel["time_slot"].drop_duplicates().sort_values().reset_index(drop=True)
-    total_slots = len(unique_slots)
-    train_end = int(total_slots * train_ratio)
-    valid_end = int(total_slots * (train_ratio + valid_ratio))
-    if train_end <= 0 or valid_end <= train_end or valid_end >= total_slots:
-        raise ValueError("Train/validation split leaves an empty partition; adjust ratios or data span")
 
-    train_slots = unique_slots.iloc[:train_end].tolist()
-    valid_slots = unique_slots.iloc[train_end:valid_end].tolist()
-    test_slots = unique_slots.iloc[valid_end:].tolist()
+    if test_start_date is not None:
+        test_start = pd.Timestamp(test_start_date)
+        train_valid_mask = unique_slots < test_start
+        test_mask = unique_slots >= test_start
+        train_valid_slots = unique_slots[train_valid_mask].tolist()
+        test_slots = unique_slots[test_mask].tolist()
+        n_train_valid = len(train_valid_slots)
+        ratio_sum = train_ratio + valid_ratio
+        if ratio_sum <= 0:
+            raise ValueError("train_ratio + valid_ratio must be > 0 for date-based split")
+        train_end = int(n_train_valid * (train_ratio / ratio_sum))
+        if train_end <= 0 or train_end >= n_train_valid:
+            raise ValueError("Date-based train/validation split leaves an empty partition; adjust ratios or data span")
+        train_slots = train_valid_slots[:train_end]
+        valid_slots = train_valid_slots[train_end:]
+    else:
+        total_slots = len(unique_slots)
+        train_end = int(total_slots * train_ratio)
+        valid_end = int(total_slots * (train_ratio + valid_ratio))
+        if train_end <= 0 or valid_end <= train_end or valid_end >= total_slots:
+            raise ValueError("Train/validation split leaves an empty partition; adjust ratios or data span")
+        train_slots = unique_slots.iloc[:train_end].tolist()
+        valid_slots = unique_slots.iloc[train_end:valid_end].tolist()
+        test_slots = unique_slots.iloc[valid_end:].tolist()
+
     train_df = panel[panel["time_slot"].isin(train_slots)].copy()
     valid_df = panel[panel["time_slot"].isin(valid_slots)].copy()
     test_df = panel[panel["time_slot"].isin(test_slots)].copy()
@@ -335,8 +372,16 @@ def main() -> None:
 
     start_time = pd.Timestamp(panel["time_slot"].min())
     end_time = pd.Timestamp(panel["time_slot"].max())
-    print("Fetching historical weather features...")
-    weather = fetch_weather_features(start_time, end_time)
+    if args.weather_cache and args.weather_cache.exists():
+        print(f"Loading cached weather from {args.weather_cache}...")
+        weather = pd.read_csv(args.weather_cache)
+        weather["time_slot"] = pd.to_datetime(weather["time_slot"])
+    else:
+        print("Fetching historical weather features...")
+        weather = fetch_weather_features(start_time, end_time, panel["time_slot"])
+        if args.weather_cache:
+            args.weather_cache.parent.mkdir(parents=True, exist_ok=True)
+            weather.to_csv(args.weather_cache, index=False)
     holidays = build_holiday_features(panel["time_slot"])
 
     panel = add_time_features(panel)
@@ -388,7 +433,7 @@ def main() -> None:
     ]
     panel = panel.dropna(subset=required_history).reset_index(drop=True)
 
-    train_df, valid_df, test_df = make_splits(panel, args.train_ratio, args.valid_ratio)
+    train_df, valid_df, test_df = make_splits(panel, args.train_ratio, args.valid_ratio, args.test_start_date)
     train_df = add_target_encoding(train_df, train_df)
     valid_df = add_target_encoding(train_df, valid_df)
     test_df = add_target_encoding(train_df, test_df)

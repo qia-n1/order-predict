@@ -14,6 +14,7 @@ from matplotlib.colors import LinearSegmentedColormap
 ROOT = Path(__file__).resolve().parents[1]
 MODELS_DIR = ROOT / "models"
 PICTURE_DIR = MODELS_DIR / "picture"
+OUTPUT_DIR = MODELS_DIR / "picture2"
 
 
 def read_csv(path: Path) -> list[dict[str, str]]:
@@ -598,6 +599,6 @@ if __name__ == "__main__":
 
     fig.suptitle("JTJM Model Results Dashboard", fontsize=28, fontweight="bold", y=0.985, color="#f6fbff")
 
-    output = PICTURE_DIR / "jtjm_model_results_dashboard_dark.png"
+    output = OUTPUT_DIR / "jtjm_model_results_dashboard_dark.png"
     fig.savefig(output, dpi=180, bbox_inches="tight", facecolor=fig.get_facecolor())
     print(f"Saved visualization to: {output}")

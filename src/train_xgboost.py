@@ -36,6 +36,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--weight-very-high", type=float, default=10.0, help="Training weight for y >= very-high-threshold rows")
     parser.add_argument("--high-count-threshold", type=float, default=4.0, help="Threshold for medium/high-demand metrics and weighting")
     parser.add_argument("--very-high-count-threshold", type=float, default=8.0, help="Threshold for highest training weight tier")
+    parser.add_argument("--test-start-date", type=str, default=None, help="Date boundary for test split, e.g. '2015-06-24'. Overrides ratio-based split.")
     return parser.parse_args()
 
 
@@ -121,17 +122,33 @@ def add_target_encoding(train_df: pd.DataFrame, other_df: pd.DataFrame) -> pd.Da
     return encoded
 
 
-def make_splits(panel: pd.DataFrame, train_ratio: float, valid_ratio: float) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def make_splits(panel: pd.DataFrame, train_ratio: float, valid_ratio: float, test_start_date: str | None = None) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     unique_slots = panel["time_slot"].drop_duplicates().sort_values().reset_index(drop=True)
-    total_slots = len(unique_slots)
-    train_end = int(total_slots * train_ratio)
-    valid_end = int(total_slots * (train_ratio + valid_ratio))
-    if train_end <= 0 or valid_end <= train_end or valid_end >= total_slots:
-        raise ValueError("Train/validation split leaves an empty partition; adjust ratios or data span")
 
-    train_slots = unique_slots.iloc[:train_end].tolist()
-    valid_slots = unique_slots.iloc[train_end:valid_end].tolist()
-    test_slots = unique_slots.iloc[valid_end:].tolist()
+    if test_start_date is not None:
+        test_start = pd.Timestamp(test_start_date)
+        train_valid_mask = unique_slots < test_start
+        test_mask = unique_slots >= test_start
+        train_valid_slots = unique_slots[train_valid_mask].tolist()
+        test_slots = unique_slots[test_mask].tolist()
+        n_train_valid = len(train_valid_slots)
+        ratio_sum = train_ratio + valid_ratio
+        if ratio_sum <= 0:
+            raise ValueError("train_ratio + valid_ratio must be > 0 for date-based split")
+        train_end = int(n_train_valid * (train_ratio / ratio_sum))
+        if train_end <= 0 or train_end >= n_train_valid:
+            raise ValueError("Date-based train/validation split leaves an empty partition; adjust ratios or data span")
+        train_slots = train_valid_slots[:train_end]
+        valid_slots = train_valid_slots[train_end:]
+    else:
+        total_slots = len(unique_slots)
+        train_end = int(total_slots * train_ratio)
+        valid_end = int(total_slots * (train_ratio + valid_ratio))
+        if train_end <= 0 or valid_end <= train_end or valid_end >= total_slots:
+            raise ValueError("Train/validation split leaves an empty partition; adjust ratios or data span")
+        train_slots = unique_slots.iloc[:train_end].tolist()
+        valid_slots = unique_slots.iloc[train_end:valid_end].tolist()
+        test_slots = unique_slots.iloc[valid_end:].tolist()
 
     train_df = panel[panel["time_slot"].isin(train_slots)].copy()
     valid_df = panel[panel["time_slot"].isin(valid_slots)].copy()
@@ -221,7 +238,7 @@ def main() -> None:
         subset=["lag_1", "lag_2", "lag_24", "lag_168", "rolling_mean_3", "rolling_mean_6", "rolling_mean_24"]
     ).reset_index(drop=True)
 
-    train_df, valid_df, test_df = make_splits(panel, args.train_ratio, args.valid_ratio)
+    train_df, valid_df, test_df = make_splits(panel, args.train_ratio, args.valid_ratio, args.test_start_date)
     train_df = add_target_encoding(train_df, train_df)
     valid_df = add_target_encoding(train_df, valid_df)
     test_df = add_target_encoding(train_df, test_df)

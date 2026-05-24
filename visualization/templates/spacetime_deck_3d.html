@@ -11,6 +11,8 @@
       "@deck.gl/core/": "https://unpkg.com/@deck.gl/core@9.0.38/dist/",
       "@deck.gl/layers": "https://unpkg.com/@deck.gl/layers@9.0.38/dist/index.js",
       "@deck.gl/layers/": "https://unpkg.com/@deck.gl/layers@9.0.38/dist/",
+      "@deck.gl/geo-layers": "https://unpkg.com/@deck.gl/geo-layers@9.0.38/dist/index.js",
+      "@deck.gl/geo-layers/": "https://unpkg.com/@deck.gl/geo-layers@9.0.38/dist/",
       "@luma.gl/constants": "https://unpkg.com/@luma.gl/constants@9.0.27/dist/index.js",
       "@luma.gl/constants/": "https://unpkg.com/@luma.gl/constants@9.0.27/dist/",
       "@luma.gl/core": "https://unpkg.com/@luma.gl/core@9.0.27/dist/index.js",
@@ -204,8 +206,8 @@
 
       const mlMod = await tryImport(
         [
-          'https://esm.sh/maplibre-gl@4.7.1',
           UNPKG + '/maplibre-gl@4.7.1/dist/maplibre-gl.js',
+          'https://esm.sh/maplibre-gl@4.7.1',
           JD + '/maplibre-gl@4.7.1/+esm',
         ],
         'maplibre-gl'
@@ -213,19 +215,17 @@
       let maplibregl = mlMod.default || mlMod;
       if (maplibregl && !maplibregl.Map && maplibregl.default) maplibregl = maplibregl.default;
 
-      /* jsdelivr 对部分 @deck.gl/mapbox 请求会 400，优先 unpkg */
+      /* 优先 unpkg，避免版本不匹配 */
       const mapboxMod = await tryImport(
         [
           UNPKG + '/@deck.gl/mapbox@' + DECK + '/dist/index.js',
-          'https://esm.sh/@deck.gl/mapbox@' + DECK,
           JD + '/@deck.gl/mapbox@' + DECK + '/dist/index.js',
         ],
         '@deck.gl/mapbox'
       );
       const h3Mod = await tryImport(
         [
-          UNPKG + '/@deck.gl/geo-layers@' + DECK + '/dist/h3-layers/h3-hexagon-layer.js',
-          JD + '/@deck.gl/geo-layers@' + DECK + '/dist/h3-layers/h3-hexagon-layer.js',
+          UNPKG + '/@deck.gl/geo-layers@' + DECK + '/dist/index.js',
         ],
         'H3HexagonLayer'
       );
@@ -233,7 +233,7 @@
       return {
         maplibregl,
         MapboxOverlay: mapboxMod.MapboxOverlay,
-        H3HexagonLayer: h3Mod.default,
+        H3HexagonLayer: h3Mod.H3HexagonLayer || h3Mod.default,
       };
     }
 
