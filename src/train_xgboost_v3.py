@@ -450,6 +450,14 @@ def main() -> None:
         train_embeddings = read_embeddings(train_embedding_path, args.embedding_dim)
         valid_embeddings = read_embeddings(valid_embedding_path, args.embedding_dim)
         test_embeddings = read_embeddings(test_embedding_path, args.embedding_dim)
+        history_path = output_dir / "stage1_history.csv"
+        if history_path.exists():
+            history_df = pd.read_csv(history_path)
+            stage1_history = history_df.to_dict("records")
+            if not history_df.empty and "valid_mae" in history_df.columns:
+                best_idx = int(history_df["valid_mae"].idxmin())
+                best_epoch = int(history_df.loc[best_idx, "epoch"])
+                best_valid_mae = float(history_df.loc[best_idx, "valid_mae"])
     else:
         best_state = None
         patience_left = args.patience
