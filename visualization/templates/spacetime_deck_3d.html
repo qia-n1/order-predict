@@ -4,119 +4,97 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>订单时空 · 3D H3</title>
-  <script type="importmap">
-  {
-    "imports": {
-      "@deck.gl/core": "https://unpkg.com/@deck.gl/core@9.0.38/dist/index.js",
-      "@deck.gl/core/": "https://unpkg.com/@deck.gl/core@9.0.38/dist/",
-      "@deck.gl/layers": "https://unpkg.com/@deck.gl/layers@9.0.38/dist/index.js",
-      "@deck.gl/layers/": "https://unpkg.com/@deck.gl/layers@9.0.38/dist/",
-      "@deck.gl/geo-layers": "https://unpkg.com/@deck.gl/geo-layers@9.0.38/dist/index.js",
-      "@deck.gl/geo-layers/": "https://unpkg.com/@deck.gl/geo-layers@9.0.38/dist/",
-      "@luma.gl/constants": "https://unpkg.com/@luma.gl/constants@9.0.27/dist/index.js",
-      "@luma.gl/constants/": "https://unpkg.com/@luma.gl/constants@9.0.27/dist/",
-      "@luma.gl/core": "https://unpkg.com/@luma.gl/core@9.0.27/dist/index.js",
-      "@luma.gl/core/": "https://unpkg.com/@luma.gl/core@9.0.27/dist/",
-      "@luma.gl/engine": "https://unpkg.com/@luma.gl/engine@9.0.27/dist/index.js",
-      "@luma.gl/engine/": "https://unpkg.com/@luma.gl/engine@9.0.27/dist/",
-      "@luma.gl/shadertools": "https://unpkg.com/@luma.gl/shadertools@9.0.27/dist/index.js",
-      "@luma.gl/shadertools/": "https://unpkg.com/@luma.gl/shadertools@9.0.27/dist/",
-      "@luma.gl/webgl": "https://unpkg.com/@luma.gl/webgl@9.0.27/dist/index.js",
-      "@luma.gl/webgl/": "https://unpkg.com/@luma.gl/webgl@9.0.27/dist/",
-      "@loaders.gl/core": "https://unpkg.com/@loaders.gl/core@4.2.0/dist/index.js",
-      "@loaders.gl/core/": "https://unpkg.com/@loaders.gl/core@4.2.0/dist/",
-      "@loaders.gl/images": "https://unpkg.com/@loaders.gl/images@4.2.0/dist/index.js",
-      "@loaders.gl/images/": "https://unpkg.com/@loaders.gl/images@4.2.0/dist/",
-      "@loaders.gl/schema": "https://unpkg.com/@loaders.gl/schema@4.2.0/dist/index.js",
-      "@loaders.gl/schema/": "https://unpkg.com/@loaders.gl/schema@4.2.0/dist/",
-      "@loaders.gl/loader-utils": "https://unpkg.com/@loaders.gl/loader-utils@4.2.0/dist/index.js",
-      "@loaders.gl/loader-utils/": "https://unpkg.com/@loaders.gl/loader-utils@4.2.0/dist/",
-      "@math.gl/core": "https://unpkg.com/@math.gl/core@4.1.0/dist/index.js",
-      "@math.gl/core/": "https://unpkg.com/@math.gl/core@4.1.0/dist/",
-      "@math.gl/polygon": "https://unpkg.com/@math.gl/polygon@4.1.0/dist/index.js",
-      "@math.gl/polygon/": "https://unpkg.com/@math.gl/polygon@4.1.0/dist/",
-      "@math.gl/web-mercator": "https://unpkg.com/@math.gl/web-mercator@4.1.0/dist/index.js",
-      "@math.gl/web-mercator/": "https://unpkg.com/@math.gl/web-mercator@4.1.0/dist/",
-      "@math.gl/sun": "https://unpkg.com/@math.gl/sun@4.1.0/dist/index.js",
-      "@math.gl/sun/": "https://unpkg.com/@math.gl/sun@4.1.0/dist/",
-      "@math.gl/types": "https://unpkg.com/@math.gl/types@4.1.0/dist/index.js",
-      "@math.gl/types/": "https://unpkg.com/@math.gl/types@4.1.0/dist/",
-      "@probe.gl/env": "https://unpkg.com/@probe.gl/env@4.0.9/dist/index.js",
-      "@probe.gl/env/": "https://unpkg.com/@probe.gl/env@4.0.9/dist/",
-      "@probe.gl/log": "https://unpkg.com/@probe.gl/log@4.0.9/dist/index.js",
-      "@probe.gl/log/": "https://unpkg.com/@probe.gl/log@4.0.9/dist/",
-      "@probe.gl/stats": "https://unpkg.com/@probe.gl/stats@4.0.9/dist/index.js",
-      "@probe.gl/stats/": "https://unpkg.com/@probe.gl/stats@4.0.9/dist/",
-      "earcut": "https://esm.sh/earcut@2.2.4",
-      "gl-matrix": "https://unpkg.com/gl-matrix@3.4.3/esm/index.js",
-      "h3-js": "https://unpkg.com/h3-js@4.1.0/dist/h3-js.es.js",
-      "mjolnir.js": "https://esm.sh/mjolnir.js@2.7.0"
-    }
-  }
-  </script>
-  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" crossorigin="anonymous" />
+  <script src="https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/deck.gl@9.0.27/dist.min.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
   <style>
-    html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; background: #0b0c0f; color: #e8eaed; }
-    #map { position: absolute; top: 0; left: 0; right: 0; bottom: 168px; }
+    html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; background: #0a0a0f; color: #e8eaed; overflow: hidden; }
+    #canvasContainer { position: absolute; top: 0; left: 0; right: 0; bottom: 168px; background: linear-gradient(180deg, #0d0d12 0%, #0a0a0f 100%); }
+    #mapBase {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 0;
+    }
+    #deckCanvas { position: relative; z-index: 1; pointer-events: none; }
     #bar {
       position: absolute; left: 0; right: 0; bottom: 0; height: 168px;
-      background: linear-gradient(180deg, #14151a 0%, #0b0c0f 100%);
-      border-top: 1px solid #2d2f36;
-      padding: 10px 16px 12px;
+      background: linear-gradient(180deg, #12121a 0%, #0a0a0f 100%);
+      border-top: 1px solid #252530;
+      padding: 12px 16px 14px;
       box-sizing: border-box;
+      z-index: 10;
     }
     #centerHud {
       position: absolute; left: 50%; bottom: 188px; transform: translateX(-50%);
-      z-index: 2; text-align: center; pointer-events: none; max-width: 92vw;
-      padding: 8px 14px; border-radius: 4px;
-      background: rgba(11, 12, 15, 0.72); border: 1px solid rgba(60, 64, 67, 0.7);
-      font-size: 13px; color: #e8eaed; text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+      z-index: 100; text-align: center; pointer-events: none;
+      padding: 10px 20px; border-radius: 8px;
+      background: rgba(10, 10, 15, 0.85); border: 1px solid rgba(60, 64, 70, 0.6);
+      font-size: 14px; color: #e8eaed;
+      backdrop-filter: blur(8px);
     }
-    #centerHud span { color: #bdc1c6; font-variant-numeric: tabular-nums; }
+    #centerHud .date { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+    #centerHud .timeRange { color: #9aa0a6; font-size: 13px; }
     #legend {
-      position: absolute; top: 12px; right: 12px; width: 168px; z-index: 2;
-      background: rgba(20,21,26,0.92); border: 1px solid #3c4043; border-radius: 2px;
-      padding: 10px 10px 8px; font-size: 10px; color: #9aa0a6;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+      position: absolute; top: 16px; right: 16px; width: 172px; z-index: 100;
+      background: rgba(18, 18, 26, 0.95); border: 1px solid #2d2f36; border-radius: 4px;
+      padding: 12px; font-size: 11px; color: #9aa0a6;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     }
-    #legend h3 { margin: 0 0 6px; font-size: 11px; font-weight: 600; color: #e8eaed; border-bottom: 1px solid #3c4043; padding-bottom: 6px; }
-    .legend-metric { font-size: 11px; font-weight: 600; color: #e8eaed; margin: 0 0 8px; padding-bottom: 6px; border-bottom: 1px solid #3c4043; }
-    .leg-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
-    .leg-swatch { width: 12px; height: 12px; border-radius: 1px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.12); }
-    .legend-note { margin-top: 8px; padding-top: 6px; border-top: 1px solid #3c4043; font-size: 9px; color: #80868b; }
+    #legend h3 { margin: 0 0 8px; font-size: 12px; font-weight: 600; color: #e8eaed; border-bottom: 1px solid #2d2f36; padding-bottom: 8px; }
+    .legend-metric { font-size: 12px; font-weight: 600; color: #e8eaed; margin: 0 0 8px; padding-bottom: 8px; border-bottom: 1px solid #2d2f36; }
+    .leg-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .leg-swatch { width: 14px; height: 14px; border-radius: 2px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.1); }
+    .legend-note { margin-top: 8px; padding-top: 8px; border-top: 1px solid #2d2f36; font-size: 10px; color: #80868b; }
     #mode {
-      position: absolute; top: 12px; left: 12px; z-index: 2;
-      background: rgba(20,21,26,0.92); border: 1px solid #3c4043; border-radius: 2px;
-      padding: 6px 10px; font-size: 11px;
+      position: absolute; top: 16px; left: 16px; z-index: 100;
+      background: rgba(18, 18, 26, 0.95); border: 1px solid #2d2f36; border-radius: 4px;
+      padding: 8px 12px; font-size: 12px;
     }
-    #mode label { margin-right: 12px; cursor: pointer; color: #bdc1c6; }
-    #mapTools { position: absolute; top: 52px; right: 12px; z-index: 2; }
+    #mode label { margin-right: 14px; cursor: pointer; color: #bdc1c6; }
+    #mode input[type="radio"] { margin-right: 6px; accent-color: #4a9eff; }
+    #mapTools { position: absolute; top: 64px; right: 16px; z-index: 100; display: flex; flex-direction: column; gap: 4px; }
     #mapTools button {
-      width: 32px; height: 32px; background: rgba(20,21,26,0.92); border: 1px solid #3c4043;
-      border-radius: 2px; color: #e8eaed; font-size: 12px; cursor: pointer;
+      width: 36px; height: 36px; background: rgba(18, 18, 26, 0.95); border: 1px solid #2d2f36;
+      border-radius: 4px; color: #e8eaed; font-size: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
     }
-    #barHeader { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 4px; font-size: 12px; color: #bdc1c6; }
-    #histWrap { height: 52px; margin: 4px 0; position: relative; }
-    #hist { width: 100%; height: 52px; display: block; cursor: pointer; border-radius: 2px; background: #1a1b21; }
+    #mapTools button:hover { background: rgba(30, 30, 40, 0.95); }
+    #barHeader { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 6px; font-size: 12px; color: #9aa0a6; }
+    #histWrap { height: 56px; margin: 4px 0; position: relative; }
+    #hist { width: 100%; height: 56px; display: block; cursor: pointer; border-radius: 4px; background: #12121a; }
     #brush {
-      position: absolute; top: 0; bottom: 22px; left: 0%; width: 30%;
-      border: 1px solid rgba(255,255,255,0.9); border-radius: 2px; pointer-events: none;
+      position: absolute; top: 0; bottom: 24px; left: 0%; width: 30%;
+      border: 1px solid rgba(255,255,255,0.8); border-radius: 2px; pointer-events: none;
       box-sizing: border-box;
+      background: rgba(74, 158, 255, 0.1);
     }
-    #timeAxis { height: 18px; position: relative; font-size: 10px; color: #9aa0a6; }
+    #timeAxis { height: 20px; position: relative; font-size: 11px; color: #80868b; }
     #timeAxis span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
-    #controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; justify-content: space-between; }
+    #controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; justify-content: space-between; }
     button.ctl {
-      background: #1a1b21; color: #e8eaed; border: 1px solid #3c4043; border-radius: 2px;
-      padding: 5px 10px; font-size: 11px; cursor: pointer;
+      background: #1a1a24; color: #e8eaed; border: 1px solid #2d2f36; border-radius: 4px;
+      padding: 6px 12px; font-size: 12px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      gap: 4px;
     }
-    #speedWrap { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #9aa0a6; }
-    #t0 { flex: 1; min-width: 160px; max-width: 420px; }
+    button.ctl:hover { background: #22222e; }
+    #speedWrap { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #9aa0a6; }
+    #t0 { flex: 1; min-width: 180px; max-width: 450px; height: 6px; -webkit-appearance: none; appearance: none; background: #1a1a24; border-radius: 3px; outline: none; }
+    #t0::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; background: #4a9eff; border-radius: 50%; cursor: pointer; }
+    #speed { width: 100px; height: 4px; -webkit-appearance: none; appearance: none; background: #1a1a24; border-radius: 2px; outline: none; }
+    #speed::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 12px; height: 12px; background: #4a9eff; border-radius: 50%; cursor: pointer; }
+    #play { min-width: 40px; }
   </style>
 </head>
 <body>
-  <div id="map"></div>
-  <div id="centerHud" aria-hidden="true"></div>
+  <div id="canvasContainer">
+    <div id="mapBase"></div>
+    <canvas id="deckCanvas"></canvas>
+  </div>
+  <div id="centerHud">
+    <div class="date" id="hudDate">11/01/2016</div>
+    <div class="timeRange" id="hudTime">10:56:22 AM – 11:09:15 AM</div>
+  </div>
   <div id="mode">
     <label><input type="radio" name="m" value="count" checked /> 实测 count</label>
     <label><input type="radio" name="m" value="prediction" /> 预测 prediction</label>
@@ -125,13 +103,15 @@
     <h3>Layer Legend</h3>
     <div id="legendMetric" class="legend-metric">count</div>
     <div id="legendRows"></div>
-    <div class="legend-note" id="legendNote">Height scale by count.</div>
+    <div class="legend-note" id="legendNote">Height Scale by count</div>
   </div>
-  <div id="mapTools"><button type="button" id="btn3d" title="2D/3D">3D</button></div>
+  <div id="mapTools">
+    <button type="button" id="btn3d" title="2D/3D">3D</button>
+  </div>
   <div id="bar">
     <div id="barHeader"><span id="barDate"></span><span id="barRange"></span></div>
     <div id="histWrap">
-      <canvas id="hist" width="1200" height="52"></canvas>
+      <canvas id="hist" width="1400" height="56"></canvas>
       <div id="brush"></div>
     </div>
     <div id="timeAxis"></div>
@@ -142,7 +122,7 @@
         <button type="button" class="ctl" id="stepFwd">▶|</button>
         <button type="button" class="ctl" id="play">▶</button>
         <button type="button" class="ctl" id="reset">⟲</button>
-        <div id="speedWrap"><span>Speed</span><input type="range" id="speed" min="1" max="10" value="4" style="width:100px" /><span id="speedVal">1x</span></div>
+        <div id="speedWrap"><span>Speed</span><input type="range" id="speed" min="1" max="10" value="4" /><span id="speedVal">1x</span></div>
       </div>
     </div>
   </div>
@@ -150,97 +130,21 @@
   <script type="application/json" id="embed-meta">@@EMBED_META@@</script>
   <script type="application/json" id="embed-data">@@EMBED_DATA@@</script>
 
-  <script type="module">
-    function showMapError(title, detail) {
-      const el = document.getElementById('map');
-      const esc = (s) =>
-        String(s)
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/"/g, '&quot;');
+  <script>
+    function showError(title, detail) {
+      const el = document.getElementById('canvasContainer');
+      const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
       el.innerHTML =
-        '<div style="padding:20px 24px;max-width:720px;color:#f85149;font:13px/1.6 system-ui,sans-serif">' +
-        '<strong>' +
-        esc(title) +
-        '</strong><br/><br/><pre style="color:#9aa0a6;white-space:pre-wrap;word-break:break-all;font-size:11px">' +
-        esc(detail) +
-        '</pre><p style="color:#bdc1c6;margin-top:12px;font-size:12px">请用 <code>http://127.0.0.1</code> 本地服务打开本页（勿用 file://）。脚本会依次尝试 <code>unpkg</code> / <code>esm.sh</code> / <code>jsdelivr</code> 加载 deck 与 MapLibre；若仍失败请开代理或换网络。</p></div>';
-    }
-
-    const RASTER_DARK = {
-      version: 8,
-      sources: {
-        cartoDark: {
-          type: 'raster',
-          tiles: [
-            'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-            'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-            'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-          ],
-          tileSize: 256,
-          attribution: '© CARTO © OSM',
-        },
-      },
-      layers: [{ id: 'bg', type: 'raster', source: 'cartoDark', minzoom: 0, maxzoom: 22 }],
-    };
-    const VECTOR_FALLBACK = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
-    const DEMO_STYLE = 'https://demotiles.maplibre.org/style.json';
-
-    async function tryImport(urls, label) {
-      let last;
-      for (const u of urls) {
-        try {
-          return await import(u);
-        } catch (e) {
-          console.warn('[viz]', label, 'fail', u, e);
-          last = e;
-        }
-      }
-      throw last || new Error(label + ': import failed');
-    }
-
-    async function loadLibs() {
-      const DECK = '9.0.38';
-      const UNPKG = 'https://unpkg.com';
-      const JD = 'https://cdn.jsdelivr.net/npm';
-
-      const mlMod = await tryImport(
-        [
-          UNPKG + '/maplibre-gl@4.7.1/dist/maplibre-gl.js',
-          'https://esm.sh/maplibre-gl@4.7.1',
-          JD + '/maplibre-gl@4.7.1/+esm',
-        ],
-        'maplibre-gl'
-      );
-      let maplibregl = mlMod.default || mlMod;
-      if (maplibregl && !maplibregl.Map && maplibregl.default) maplibregl = maplibregl.default;
-
-      /* 优先 unpkg，避免版本不匹配 */
-      const mapboxMod = await tryImport(
-        [
-          UNPKG + '/@deck.gl/mapbox@' + DECK + '/dist/index.js',
-          JD + '/@deck.gl/mapbox@' + DECK + '/dist/index.js',
-        ],
-        '@deck.gl/mapbox'
-      );
-      const h3Mod = await tryImport(
-        [
-          UNPKG + '/@deck.gl/geo-layers@' + DECK + '/dist/index.js',
-        ],
-        'H3HexagonLayer'
-      );
-
-      return {
-        maplibregl,
-        MapboxOverlay: mapboxMod.MapboxOverlay,
-        H3HexagonLayer: h3Mod.H3HexagonLayer || h3Mod.default,
-      };
+        '<div style="padding:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#f85149;font:14px/1.6 system-ui,sans-serif">' +
+        '<strong style="font-size:16px;margin-bottom:16px">' + esc(title) + '</strong>' +
+        '<pre style="color:#9aa0a6;white-space:pre-wrap;word-break:break-all;font-size:12px;max-width:600px">' + esc(detail) + '</pre>' +
+        '</div>';
     }
 
     const rawMeta = document.getElementById('embed-meta').textContent.trim();
     const rawData = document.getElementById('embed-data').textContent.trim();
     if (rawMeta.includes('@@EMBED') || rawData.includes('@@EMBED')) {
-      showMapError('数据未嵌入', '请运行: python visualization/scripts/build_spacetime_deck_3d.py');
+      showError('数据未嵌入', '请运行: python visualization/scripts/build_spacetime_deck_3d.py');
       throw new Error('placeholder');
     }
     let meta;
@@ -249,24 +153,7 @@
       meta = JSON.parse(rawMeta);
       FULL = JSON.parse(rawData);
     } catch (e) {
-      showMapError('JSON 解析失败', e && e.message ? e.message : String(e));
-      throw e;
-    }
-
-    let maplibregl;
-    let MapboxOverlay;
-    let H3HexagonLayer;
-    try {
-      const libs = await loadLibs();
-      maplibregl = libs.maplibregl;
-      MapboxOverlay = libs.MapboxOverlay;
-      H3HexagonLayer = libs.H3HexagonLayer;
-    } catch (e) {
-      console.error(e);
-      showMapError(
-        '三维库加载失败（deck.gl / MapLibre）',
-        (e && e.message) || String(e)
-      );
+      showError('JSON 解析失败', e && e.message ? e.message : String(e));
       throw e;
     }
 
@@ -311,11 +198,10 @@
       return mode === 'count' ? countMax : predictionMax;
     }
     function fillColor(v) {
-      const a = v < 1 ? 200 : v < 2 ? 215 : v < 5 ? 230 : v < 15 ? 245 : 255;
-      if (v < 1) return [247, 251, 255, a];
-      if (v < 2) return [222, 235, 247, a];
-      if (v < 5) return [158, 202, 225, a];
-      if (v < 15) return [49, 130, 189, a];
+      if (v < 1) return [247, 251, 255, 220];
+      if (v < 2) return [222, 235, 247, 230];
+      if (v < 5) return [158, 202, 225, 240];
+      if (v < 15) return [49, 130, 189, 250];
       return [8, 81, 156, 255];
     }
     function sliceData() {
@@ -326,7 +212,7 @@
     function renderLegend(gm) {
       const field = mode === 'count' ? 'count' : 'prediction';
       document.getElementById('legendMetric').textContent = field;
-      document.getElementById('legendNote').textContent = 'Height scale by ' + field + '.';
+      document.getElementById('legendNote').textContent = 'Height Scale by ' + field;
       const top = Math.max(Number(gm) || 0, 15);
       const labels = ['1.00 to 1.00', '1.00 to 2.00', '2.00 to 5.00', '5.00 to 15.00', '15.00 to ' + top.toFixed(2)];
       const rows = document.getElementById('legendRows');
@@ -342,10 +228,12 @@
     function updateHud() {
       const tA = new Date(slots[idx]);
       const tB = new Date(slots[Math.min(idx + windowHours - 1, n - 1)] + hourMs);
-      const o = { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true };
-      const r = tA.toLocaleString('en-US', o) + ' – ' + tB.toLocaleString('en-US', o);
-      const d = meta.display_date || tA.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-      document.getElementById('centerHud').innerHTML = d + ' <span>|</span> <span>' + r + '</span>';
+      const dateFmt = new Intl.DateTimeFormat('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+      const timeFmt = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+      const d = meta.display_date || dateFmt.format(tA);
+      const r = timeFmt.format(tA) + ' – ' + timeFmt.format(tB);
+      document.getElementById('hudDate').textContent = d;
+      document.getElementById('hudTime').textContent = r;
       document.getElementById('barDate').textContent = d;
       document.getElementById('barRange').textContent = r;
     }
@@ -365,11 +253,11 @@
     }
     function drawTimeAxis() {
       timeAxisEl.innerHTML = '';
-      const tickHours = [3, 6, 9, 12, 15, 18, 21];
+      const tickHours = [0, 3, 6, 9, 12, 15, 18, 21];
       const fmt = new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: true });
       for (const th of tickHours) {
         let best = -1, bestDiff = 999;
-        for (let i = 0; i < n; i++) {
+        for (let i = 0; i < slots.length; i++) {
           const h = new Date(slots[i]).getHours();
           const diff = Math.abs(h - th);
           if (diff < bestDiff) {
@@ -377,208 +265,267 @@
             best = i;
           }
         }
-        if (best < 0) continue;
-        const span = document.createElement('span');
-        span.textContent = fmt.format(new Date(slots[best]));
-        span.style.left = ((best / Math.max(1, n - 1)) * 100) + '%';
-        timeAxisEl.appendChild(span);
+        if (best >= 0) {
+          const el = document.createElement('span');
+          el.textContent = fmt.format(new Date(slots[best]));
+          el.style.left = ((best / (slots.length - 1)) * 100) + '%';
+          timeAxisEl.appendChild(el);
+        }
       }
     }
     function drawHist() {
       const ctx = histCanvas.getContext('2d');
-      const cssW = histCanvas.clientWidth || 800;
-      const cssH = 52;
-      const w = (histCanvas.width = Math.floor(cssW * devicePixelRatio));
-      const h = (histCanvas.height = Math.floor(cssH * devicePixelRatio));
-      ctx.clearRect(0, 0, w, h);
-      const max = Math.max(1, ...sums, 1e-9);
-      const len = Math.max(1, sums.length);
-      const bw = w / len;
-      for (let i = 0; i < len; i++) {
-        const bh = ((sums[i] || 0) / max) * (h - 14 * devicePixelRatio);
-        ctx.fillStyle = 'rgba(66, 133, 244, 0.55)';
-        ctx.fillRect(i * bw + 0.5, h - bh - 6 * devicePixelRatio, Math.max(1, bw - 1), bh);
-      }
-      ctx.strokeStyle = '#3c4043';
-      ctx.strokeRect(0, 0, w, h);
-      const maxIdx = Math.max(0, n - windowHours);
-      if (maxIdx > 0 && n > 1) {
-        const cx = ((idx + (windowHours - 1) / 2) / maxIdx) * w;
-        ctx.strokeStyle = 'rgba(255,255,255,0.95)';
-        ctx.lineWidth = 2 * devicePixelRatio;
+      ctx.clearRect(0, 0, histCanvas.width, histCanvas.height);
+      const maxSum = Math.max(...sums, 1);
+      const w = histCanvas.width / n;
+      for (let i = 0; i < n; i++) {
+        const h = (sums[i] / maxSum) * (histCanvas.height - 6);
+        const x = i * w;
+        const alpha = i >= idx && i < idx + windowHours ? 0.9 : 0.3;
+        const g = ctx.createLinearGradient(x, histCanvas.height, x, histCanvas.height - h);
+        g.addColorStop(0, `rgba(49, 130, 189, ${alpha})`);
+        g.addColorStop(1, `rgba(158, 202, 225, ${alpha})`);
+        ctx.fillStyle = g;
         ctx.beginPath();
-        ctx.moveTo(cx, 2 * devicePixelRatio);
-        ctx.lineTo(cx, h - 8 * devicePixelRatio);
-        ctx.stroke();
+        ctx.roundRect(x, histCanvas.height - h, w - 1.5, h, 3);
+        ctx.fill();
       }
     }
-    function brushLayout() {
-      const wPct = n === 0 ? 100 : Math.max((100 * windowHours) / n, 3);
-      const maxIdx = Math.max(0, n - windowHours);
-      if (windowHours >= n || maxIdx === 0) {
-        brush.style.left = '0%';
-        brush.style.width = '100%';
-      } else {
-        brush.style.left = (idx / maxIdx) * (100 - wPct) + '%';
-        brush.style.width = wPct + '%';
-      }
+    function updateBrush() {
+      if (n <= 1) return;
+      const left = (idx / (n - windowHours)) * 100;
+      const width = ((windowHours - 0.5) / (n - 1)) * 100;
+      brush.style.left = left + '%';
+      brush.style.width = Math.max(width, 3) + '%';
     }
 
-    let overlay;
-    function buildLayer(rows) {
-      const gm = gMax();
-      renderLegend(gm);
-      const elevTop = Math.max(gm * meta.elevation_scale * 1.08, 1);
-      return new H3HexagonLayer({
-        id: 'h3-3d',
-        data: rows,
-        getHexagon: (d) => d.h3_index,
-        getElevation: elevOf,
-        elevationScale: meta.elevation_scale,
-        elevationRange: [0, elevTop],
-        extruded: true,
-        coverage: 0.88,
-        getFillColor: (d) => fillColor(elevOf(d)),
-        getLineColor: [200, 220, 255, 55],
-        pickable: true,
-        material: { ambient: 0.45, diffuse: 0.55, shininess: 18, specularColor: [80, 100, 140] },
+    let deckInstance;
+    let mapInstance;
+
+    function mapViewState() {
+      if (!mapInstance) {
+        return {
+          longitude: meta.center_lng || 114.3,
+          latitude: meta.center_lat || 30.5,
+          zoom: meta.zoom || 10.8,
+          pitch: meta.pitch || 52,
+          bearing: meta.bearing || 22,
+        };
+      }
+      const center = mapInstance.getCenter();
+      return {
+        longitude: center.lng,
+        latitude: center.lat,
+        zoom: mapInstance.getZoom(),
+        pitch: mapInstance.getPitch(),
+        bearing: mapInstance.getBearing(),
+      };
+    }
+
+    function syncDeckView() {
+      if (!deckInstance) return;
+      const viewState = mapViewState();
+      pitch3d = viewState.pitch > 10;
+      document.getElementById('btn3d').textContent = pitch3d ? '2D' : '3D';
+      deckInstance.setProps({ viewState });
+    }
+
+    function makeBaseMapStyle() {
+      return {
+        version: 8,
+        sources: {
+          osm: {
+            type: 'raster',
+            tiles: ['https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
+                    'https://webrd02.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
+                    'https://webrd03.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
+                    'https://webrd04.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}'],
+            tileSize: 256,
+            attribution: '© 高德地图',
+          },
+        },
+        layers: [
+          {
+            id: 'osm',
+            type: 'raster',
+            source: 'osm',
+            paint: {
+              'raster-opacity': 1,
+            },
+          },
+        ],
+      };
+    }
+
+    function initDeck() {
+      const canvas = document.getElementById('deckCanvas');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight - 168;
+
+      mapInstance = new maplibregl.Map({
+        container: 'mapBase',
+        style: makeBaseMapStyle(),
+        center: [meta.center_lng || 114.3, meta.center_lat || 30.5],
+        zoom: meta.zoom || 10.8,
+        pitch: meta.pitch || 52,
+        bearing: meta.bearing || 22,
+        interactive: true,
+        attributionControl: false,
       });
-    }
-    let mapReady = false;
-    function redraw() {
-      if (!mapReady || !overlay) return;
-      const rows = sliceData();
-      overlay.setProps({ layers: [buildLayer(rows)] });
-      updateHud();
-      brushLayout();
-      drawHist();
-      t0slider.value = String(idx);
-    }
 
-    function paintChromeOnly() {
-      drawTimeAxis();
+      mapInstance.on('load', () => {
+        console.log('Initializing deck.gl with map-backed viewState:', mapViewState());
+        console.log('Available deck modules:', Object.keys(deck));
+        console.log('Is H3HexagonLayer available?', !!deck.H3HexagonLayer);
+        console.log('Sample data:', FULL.slice(0, 3));
+
+        deckInstance = new deck.DeckGL({
+          canvas: canvas,
+          initialViewState: mapViewState(),
+          controller: false,
+          layers: [createHexLayer()],
+        });
+
+        syncDeckView();
+        mapInstance.on('move', syncDeckView);
+        mapInstance.on('zoom', syncDeckView);
+        mapInstance.on('rotate', syncDeckView);
+        mapInstance.on('pitch', syncDeckView);
+      });
+
       drawHist();
-      brushLayout();
+      drawTimeAxis();
+      updateHud();
       renderLegend(gMax());
-      updateHud();
     }
 
-    paintChromeOnly();
+    function createHexLayer() {
+      const rawData = sliceData();
+      console.log('Raw data length:', rawData ? rawData.length : 0);
+      if (rawData && rawData.length > 0) {
+        console.log('First data item:', rawData[0]);
+        console.log('H3 index exists:', !!rawData[0].h3_index);
+      }
+      
+      if (!rawData || rawData.length === 0) {
+        return new deck.ScatterplotLayer({ id: 'empty', data: [] });
+      }
 
-    const map = new maplibregl.Map({
-      container: 'map',
-      style: RASTER_DARK,
-      center: [meta.center_lng, meta.center_lat],
-      zoom: meta.zoom,
-      pitch: meta.pitch,
-      bearing: meta.bearing,
-      antialias: true,
-    });
-    let styleFallbackStep = 0;
-    map.on('error', (ev) => {
-      console.warn('maplibre error', ev && ev.error);
-      if (styleFallbackStep >= 2) return;
-      try {
-        if (styleFallbackStep === 0) {
-          styleFallbackStep = 1;
-          map.setStyle(VECTOR_FALLBACK);
-        } else {
-          styleFallbackStep = 2;
-          map.setStyle(DEMO_STYLE);
-        }
-      } catch (_) {}
-    });
+      const elevationScale = Math.max(1, meta.elevation_scale || 50);
+      const maxVal = Math.max(1, gMax());
 
-    overlay = new MapboxOverlay({ interleaved: false, layers: [] });
-    map.addControl(overlay);
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-left');
-
-    map.on('load', () => {
-      map.resize();
-      mapReady = true;
-      paintChromeOnly();
-      redraw();
-      speedValEl.textContent = speedMult().toFixed(1) + 'x';
-    });
-
-    function tickPlay() {
-      const maxIdx = Math.max(0, n - windowHours);
-      idx = idx >= maxIdx ? 0 : idx + 1;
-      redraw();
-    }
-    function startPlay() {
-      if (playTimer) clearInterval(playTimer);
-      if (!playing) return;
-      playTimer = setInterval(tickPlay, Math.round(900 / speedMult()));
-    }
-
-    t0slider.addEventListener('input', () => {
-      idx = parseInt(t0slider.value, 10) || 0;
-      redraw();
-    });
-    document.querySelectorAll('input[name="m"]').forEach((el) => {
-      el.addEventListener('change', () => {
-        mode = document.querySelector('input[name="m"]:checked').value;
-        redraw();
+      return new deck.H3HexagonLayer({
+        id: 'h3-hex',
+        data: rawData,
+        pickable: true,
+        wireframe: false,
+        filled: true,
+        extruded: true,
+        elevationScale,
+        getHexagon: d => d.h3_index,
+        getFillColor: d => fillColor(elevOf(d)),
+        getElevation: d => Math.max(0, elevOf(d)),
+        elevationRange: [0, maxVal * 1.2],
+        material: {
+          ambient: 0.3,
+          diffuse: 0.8,
+          specular: 0.3,
+          shininess: 32,
+        },
+        updateTriggers: {
+          getFillColor: [mode],
+          getElevation: [mode],
+        },
       });
-    });
-    let dragHist = false;
-    histCanvas.addEventListener('mousedown', () => {
-      dragHist = true;
-      playing = false;
-      playBtn.textContent = '▶';
-      if (playTimer) clearInterval(playTimer);
-      playTimer = null;
-    });
-    window.addEventListener('mouseup', () => {
-      dragHist = false;
-    });
-    function scrubFromEvent(e) {
-      const rect = histCanvas.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width;
-      const maxIdx = Math.max(0, n - windowHours);
-      idx = Math.max(0, Math.min(maxIdx, Math.round(x * maxIdx)));
-      redraw();
     }
-    histCanvas.addEventListener('mousemove', (e) => {
-      if (dragHist) scrubFromEvent(e);
-    });
-    histCanvas.addEventListener('click', scrubFromEvent);
 
-    playBtn.addEventListener('click', () => {
-      playing = !playing;
-      playBtn.textContent = playing ? '\u23F8' : '\u25B6';
-      if (playTimer) clearInterval(playTimer);
-      playTimer = null;
-      if (playing) startPlay();
-    });
-    document.getElementById('reset').addEventListener('click', () => {
-      idx = 0;
-      redraw();
-    });
-    document.getElementById('stepBack').addEventListener('click', () => {
-      idx = Math.max(0, idx - 1);
-      redraw();
-    });
-    document.getElementById('stepFwd').addEventListener('click', () => {
-      idx = Math.min(Math.max(0, n - windowHours), idx + 1);
-      redraw();
-    });
-    speedEl.addEventListener('input', () => {
-      speedValEl.textContent = speedMult().toFixed(1) + 'x';
-      if (playing) startPlay();
-    });
-    document.getElementById('btn3d').addEventListener('click', () => {
-      if (!mapReady) return;
-      pitch3d = !pitch3d;
-      map.easeTo({ pitch: pitch3d ? meta.pitch : 0, duration: 500 });
-    });
-    window.addEventListener('resize', () => {
-      map.resize();
+    function cos(deg) {
+      return Math.cos(deg * Math.PI / 180);
+    }
+
+    function updateLayer() {
+      if (!deckInstance) return;
+      deckInstance.setProps({ layers: [createHexLayer()] });
+    }
+
+    function setIdx(i) {
+      idx = Math.max(0, Math.min(i, n - windowHours));
+      t0slider.value = idx;
+      updateLayer();
+      updateBrush();
+      updateHud();
       drawHist();
-      drawTimeAxis();
-      brushLayout();
+    }
+
+    function setMode(m) {
+      mode = m;
+      renderLegend(gMax());
+      updateLayer();
+    }
+
+    function toggle3d() {
+      pitch3d = !pitch3d;
+      if (mapInstance) {
+        mapInstance.easeTo({ pitch: pitch3d ? (meta.pitch || 52) : 0, duration: 350 });
+      }
+      document.getElementById('btn3d').textContent = pitch3d ? '2D' : '3D';
+    }
+
+    function togglePlay() {
+      playing = !playing;
+      playBtn.textContent = playing ? '❚❚' : '▶';
+      if (playing) {
+        runPlay();
+      } else if (playTimer) {
+        clearTimeout(playTimer);
+        playTimer = null;
+      }
+    }
+
+    function runPlay() {
+      if (!playing) return;
+      setIdx(idx + 1);
+      if (idx >= n - windowHours) {
+        playing = false;
+        playBtn.textContent = '▶';
+        return;
+      }
+      playTimer = setTimeout(runPlay, 800 / speedMult());
+    }
+
+    t0slider.addEventListener('input', () => setIdx(parseInt(t0slider.value, 10)));
+    document.getElementById('stepBack').addEventListener('click', () => setIdx(idx - 1));
+    document.getElementById('stepFwd').addEventListener('click', () => setIdx(idx + 1));
+    document.getElementById('play').addEventListener('click', togglePlay);
+    document.getElementById('reset').addEventListener('click', () => { setIdx(0); });
+    document.getElementById('speed').addEventListener('input', () => {
+      speedValEl.textContent = speedMult().toFixed(1) + 'x';
     });
+    document.getElementById('btn3d').addEventListener('click', toggle3d);
+    document.querySelectorAll('input[name="m"]').forEach(el => {
+      el.addEventListener('change', () => setMode(el.value));
+    });
+
+    histCanvas.addEventListener('click', (e) => {
+      const rect = histCanvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const ratio = x / rect.width;
+      setIdx(Math.floor(ratio * (n - windowHours)));
+    });
+
+    window.addEventListener('resize', () => {
+      if (deckInstance) {
+        const canvas = document.getElementById('deckCanvas');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight - 168;
+        deckInstance.setProps({ width: canvas.width, height: canvas.height });
+      }
+      if (mapInstance) {
+        mapInstance.resize();
+      }
+    });
+
+    initDeck();
   </script>
 </body>
 </html>

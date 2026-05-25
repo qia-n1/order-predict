@@ -1,7 +1,7 @@
 """
-生成 3D H3 六边形挤出 + 底部时间直方图 / 播放 的独立 HTML（deck.gl 9 + MapLibre）。
+生成 3D H3 六边形挤出+ 底部时间直方图/ 播放 的独立HTML（deck.gl 9 + MapLibre）
 
-依赖：仅标准库 + pandas（与仓库根 requirements 一致），无需 pydeck。
+依赖：仅标准库+ pandas（与仓库 requirements 一致），无需 pydeck
 
 用法（在 order-predict 根目录）：
   .venv\\Scripts\\python visualization\\scripts\\build_spacetime_deck_3d.py
@@ -34,7 +34,7 @@ def _prepare(
 ) -> tuple[dict, list[dict]]:
     df = pd.read_csv(path)
     if "h3_index" not in df.columns or "time_slot" not in df.columns:
-        raise SystemExit("CSV 需包含 h3_index, time_slot")
+        raise SystemExit("CSV must contain h3_index, time_slot")
     df = df.copy()
     df["time_slot"] = pd.to_datetime(df["time_slot"])
     if date:
@@ -45,7 +45,11 @@ def _prepare(
         day = pd.Timestamp(last).normalize()
         df = df.loc[df["time_slot"].dt.normalize() == day]
     if df.empty:
-        raise SystemExit("筛选后无数据，请检查 --date。")
+        raise SystemExit("No data after filtering, check --date")
+    
+    max_records = 2000
+    if len(df) > max_records:
+        df = df.sample(n=max_records, random_state=42)
 
     df["t"] = (df["time_slot"].astype("int64") // 10**6).astype("int64")
     df["count"] = df["order_count"].astype(float)
@@ -91,14 +95,14 @@ def main() -> None:
     p.add_argument(
         "--predictions",
         type=Path,
-        default=_ROOT / "models" / "xgboost_hourly_v3_h3" / "test_predictions.csv",
+        default=_ROOT / "models" / "xgboost_hourly_v3_may_jun" / "test_predictions.csv",
     )
-    p.add_argument("--date", type=str, default="", help="YYYY-MM-DD；省略为数据中最后一天")
+    p.add_argument("--date", type=str, default="", help="YYYY-MM-DD; use last day if omitted")
     p.add_argument(
         "--window-hours",
         type=int,
         default=1,
-        help="时间窗宽度（小时槽数），1–6",
+        help="Time window width (hours)",
     )
     p.add_argument(
         "--output",
@@ -108,9 +112,9 @@ def main() -> None:
     args = p.parse_args()
 
     if not args.predictions.is_file():
-        raise SystemExit(f"找不到: {args.predictions}")
+        raise SystemExit(f"Cannot find {args.predictions}")
     if not _TPL.is_file():
-        raise SystemExit(f"缺少模板: {_TPL}")
+        raise SystemExit(f"Missing template: {_TPL}")
 
     meta, records = _prepare(
         args.predictions,
@@ -122,8 +126,8 @@ def main() -> None:
     html = html.replace("@@EMBED_DATA@@", json.dumps(records, separators=(",", ":")), 1)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(html, encoding="utf-8")
-    print(f"已写入: {args.output}")
-    print("请用本地 HTTP 打开；需可访问 unpkg/esm.sh 与 CARTO 瓦片（import 已默认 unpkg，避免 jsdelivr 对 mapbox 包 400）。")
+    print(f"Written to {args.output}")
+    print("Open with local HTTP server or proxy server; needs access to unpkg/maplibre and tile.openstreetmap.org")
 
 
 if __name__ == "__main__":

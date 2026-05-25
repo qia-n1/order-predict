@@ -107,9 +107,9 @@ def build_figure(
     fig = make_subplots(
         rows=2,
         cols=1,
-        row_heights=[0.72, 0.28],
+        row_heights=[0.75, 0.25],
         specs=[[{"type": "scattermap"}], [{"type": "xy"}]],
-        vertical_spacing=0.06,
+        vertical_spacing=0.04,
     )
 
     def bar_colors(selected_i: int) -> list[str]:
@@ -223,8 +223,8 @@ def build_figure(
         paper_bgcolor=PAPER_BG,
         plot_bgcolor=PLOT_BG,
         font=dict(color="#e8eaed", size=12),
-        height=820,
-        margin=dict(l=8, r=8, t=48, b=8),
+        margin=dict(l=10, r=10, t=45, b=80),
+        autosize=True,
         title=dict(
             text=f"订单时空分布 · {day_label} · {metric}",
             x=0.5,
@@ -260,11 +260,11 @@ def build_figure(
             dict(
                 type="buttons",
                 showactive=False,
-                x=0.18,
-                y=-0.02,
+                x=0.02,
+                y=-0.25,
                 xanchor="left",
                 yanchor="top",
-                direction="left",
+                direction="right",
                 buttons=[
                     dict(
                         label="Play",
@@ -293,7 +293,7 @@ def build_figure(
         sliders=[
             dict(
                 active=0,
-                pad=dict(t=24),
+                pad=dict(t=8),
                 steps=[
                     dict(
                         method="animate",
@@ -309,9 +309,9 @@ def build_figure(
                     )
                     for i in range(n)
                 ],
-                x=0.12,
-                len=0.86,
-                y=-0.18,
+                x=0.02,
+                len=0.96,
+                y=-0.12,
                 currentvalue=dict(
                     prefix=f"{day_label} · ",
                     visible=True,
@@ -337,19 +337,7 @@ def build_figure(
         zeroline=False,
         row=2,
         col=1,
-    )
-
-    # 底部时间轴标题区：模拟参考图「November / 03 AM …」
-    month_name = pd.Timestamp(slot_list[0]).strftime("%B")
-    fig.add_annotation(
-        x=0,
-        y=1.02,
-        xref="x2",
-        yref="y2 domain",
-        text=month_name,
-        showarrow=False,
-        font=dict(size=11, color="#9aa0a6"),
-        xanchor="left",
+        range=[0, max(totals_arr) * 1.1] if len(totals_arr) > 0 and max(totals_arr) > 0 else [0, 100],
     )
 
     return fig
@@ -360,7 +348,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--predictions",
         type=Path,
-        default=_ROOT / "models" / "xgboost_hourly_v3_h3" / "test_predictions.csv",
+        default=_ROOT / "models" / "xgboost_hourly_v3_may_jun" / "test_predictions.csv",
         help="面板 CSV（h3_index, time_slot, order_count, prediction）",
     )
     p.add_argument(
@@ -403,7 +391,52 @@ def main() -> None:
     tok = args.mapbox_token.strip() or None
     fig = build_figure(df, metric, _day, tok)
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    fig.write_html(args.output, include_plotlyjs="cdn", full_html=True)
+    
+    full_html = fig.to_html(full_html=False, include_plotlyjs='cdn')
+    html_template = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        html, body {{
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #0b0c0f;
+        }}
+        .plotly-container {{
+            width: 100%;
+            height: 100%;
+        }}
+    </style>
+</head>
+<body>
+    <div class="plotly-container">{full_html}</div>
+    <script>
+        window.addEventListener('resize', function() {{
+            var container = document.querySelector('.plotly-container');
+            var plotDiv = container.querySelector('.plotly');
+            if (plotDiv) {{
+                plotDiv.style.width = window.innerWidth + 'px';
+                plotDiv.style.height = window.innerHeight + 'px';
+                Plotly.relayout(plotDiv, {{
+                    width: window.innerWidth,
+                    height: window.innerHeight
+                }});
+            }}
+        }});
+        setTimeout(function() {{
+            window.dispatchEvent(new Event('resize'));
+        }}, 100);
+    </script>
+</body>
+</html>
+"""
+    args.output.write_text(html_template.strip(), encoding='utf-8')
     print(f"已写入: {args.output}")
 
 
