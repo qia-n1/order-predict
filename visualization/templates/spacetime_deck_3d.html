@@ -4,10 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>订单时空 · 3D H3</title>
-  <script src="https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/deck.gl@9.0.27/dist.min.js" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js" crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+  <script src="https://cdn.jsdelivr.net/npm/h3-js@4.1.0/dist/h3-js.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/deck.gl@9.0.27/dist.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
   <style>
     html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; background: #0a0a0f; color: #e8eaed; overflow: hidden; }
     #canvasContainer { position: absolute; top: 0; left: 0; right: 0; bottom: 168px; background: linear-gradient(180deg, #0d0d12 0%, #0a0a0f 100%); }
@@ -331,36 +331,14 @@
     }
 
     function makeBaseMapStyle() {
-      return {
-        version: 8,
-        sources: {
-          osm: {
-            type: 'raster',
-            tiles: ['https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
-                    'https://webrd02.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
-                    'https://webrd03.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
-                    'https://webrd04.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}'],
-            tileSize: 256,
-            attribution: '© 高德地图',
-          },
-        },
-        layers: [
-          {
-            id: 'osm',
-            type: 'raster',
-            source: 'osm',
-            paint: {
-              'raster-opacity': 1,
-            },
-          },
-        ],
-      };
+      return 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
     }
 
     function initDeck() {
       const canvas = document.getElementById('deckCanvas');
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight - 168;
+      canvas.style.background = 'transparent';
 
       mapInstance = new maplibregl.Map({
         container: 'mapBase',
@@ -383,6 +361,9 @@
           canvas: canvas,
           initialViewState: mapViewState(),
           controller: false,
+          parameters: {
+            clearColor: [0, 0, 0, 0],
+          },
           layers: [createHexLayer()],
         });
 
