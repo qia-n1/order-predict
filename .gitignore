@@ -32,3 +32,8 @@ logs/
 dist/
 build/
 *.egg-info/
+
+# Local-only (not uploaded): static delivery figures from main worktree
+src/plot_delivery_figures.py
+models/picture/delivery_figures/
+visualization/output/actual_vs_pred_kepler.csv
