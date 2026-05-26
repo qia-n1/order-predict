@@ -35,6 +35,7 @@ V3（`src/train_xgboost_v3.py`）引入了深度学习作为特征提取前端�
 以下文件是当前仓库的最终展示入口，适合直接用于汇报或页面说明：
 
 - [models/picture/jtjm_model_results_dashboard_dark.png](models/picture/jtjm_model_results_dashboard_dark.png) - H3 结果总览仪表盘，包含地图、图例和时间轴。
+- [visualization/output/order_spacetime_3d_2014-06-30.html](visualization/output/order_spacetime_3d_2014-06-30.html) - 3D 订单时空可视化入口，使用六月最后一周的逐日 HTML 版本，可通过本地 HTTP 服务器打开。
 - [models/picture/h3_resolution_ablation_table.png](models/picture/h3_resolution_ablation_table.png) - H3 分辨率消融表。
 - [models/picture/h3_resolution_sparsity_tradeoff.png](models/picture/h3_resolution_sparsity_tradeoff.png) - 分辨率与稀疏性权衡图。
 - [models/picture/h3_resolution_ablation_trends.png](models/picture/h3_resolution_ablation_trends.png) - 分辨率指标趋势图。
@@ -47,4 +48,16 @@ V3（`src/train_xgboost_v3.py`）引入了深度学习作为特征提取前端�
 
 ```bash
 python3 src/visualize_model_results.py
+```
+
+如需查看 3D 订单时空可视化，先启动本地服务：
+
+```bash
+python3 -m http.server 8000 --directory visualization/output
+```
+
+然后访问：
+
+```text
+http://127.0.0.1:8000/order_spacetime_3d_2014-06-30.html
 ```
