@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>实际订单 vs 预测 · 双图对比</title>
+  <link href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" crossorigin="anonymous" />
+  <style>
+    html, body { margin: 0; height: 100%; background: #0b0c0f; color: #e8eaed; font-family: system-ui, sans-serif; }
+    #top {
+      padding: 8px 14px; font-size: 14px; font-weight: 600; text-align: center;
+      border-bottom: 1px solid #2d2f36; background: #14151a;
+    }
+    #mapsRow {
+      position: absolute; top: 38px; left: 0; right: 0; bottom: 168px;
+      display: flex;
+    }
+    .pane { flex: 1; position: relative; border-right: 1px solid #2d2f36; }
+    .pane:last-child { border-right: none; }
+    .map { position: absolute; inset: 0; }
+    .legend {
+      position: absolute; top: 10px; right: 10px; width: 150px; z-index: 2;
+      background: rgba(20,21,26,0.92); border: 1px solid #3c4043; border-radius: 2px;
+      padding: 8px 10px; font-size: 10px; color: #9aa0a6;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+    .legend h3 { margin: 0 0 6px; font-size: 11px; font-weight: 600; color: #e8eaed; border-bottom: 1px solid #3c4043; padding-bottom: 5px; }
+    .legend-metric { font-size: 11px; font-weight: 600; color: #e8eaed; margin: 0 0 6px; }
+    .leg-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .leg-swatch { width: 12px; height: 12px; border-radius: 1px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.12); }
+    #centerHud {
+      position: absolute; left: 50%; bottom: 178px; transform: translateX(-50%);
+      z-index: 3; text-align: center; pointer-events: none; max-width: 90vw;
+      padding: 7px 14px; border-radius: 4px;
+      background: rgba(11, 12, 15, 0.78); border: 1px solid rgba(60, 64, 67, 0.75);
+      font-size: 12px; color: #e8eaed;
+    }
+    #centerHud span { color: #bdc1c6; font-variant-numeric: tabular-nums; }
+    #bar {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 168px;
+      background: linear-gradient(180deg, #14151a 0%, #0b0c0f 100%);
+      border-top: 1px solid #2d2f36;
+      padding: 8px 14px 10px; box-sizing: border-box;
+    }
+    #barHeader { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 4px; font-size: 12px; color: #bdc1c6; }
+    #histWrap { height: 52px; margin: 4px 0; position: relative; }
+    #hist { width: 100%; height: 52px; display: block; cursor: pointer; border-radius: 2px; background: #1a1b21; }
+    #brush {
+      position: absolute; top: 0; bottom: 22px; left: 0%; width: 8%;
+      border: 1px solid rgba(255,255,255,0.9); border-radius: 2px; pointer-events: none; box-sizing: border-box;
+    }
+    #timeAxis { height: 16px; position: relative; font-size: 10px; color: #9aa0a6; }
+    #timeAxis span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+    #controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; justify-content: space-between; }
+    button.ctl {
+      background: #1a1b21; color: #e8eaed; border: 1px solid #3c4043; border-radius: 2px;
+      padding: 4px 10px; font-size: 11px; cursor: pointer;
+    }
+    #speedWrap { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #9aa0a6; }
+    #t0 { flex: 1; min-width: 120px; max-width: 360px; }
+  </style>
+</head>
+<body>
+  <div id="top">实际订单 vs 预测结果</div>
+  <div id="mapsRow">
+    <div class="pane">
+      <div id="mapL" class="map"></div>
+      <div class="legend" id="legendL">
+        <h3>Layer Legend</h3>
+        <div class="legend-metric">真实 · order_count</div>
+        <div id="legendRowsL"></div>
+      </div>
+    </div>
+    <div class="pane">
+      <div id="mapR" class="map"></div>
+      <div class="legend" id="legendR">
+        <h3>Layer Legend</h3>
+        <div class="legend-metric">预测 · prediction</div>
+        <div id="legendRowsR"></div>
+      </div>
+    </div>
+  </div>
+  <div id="centerHud" aria-live="polite"></div>
+  <div id="bar">
+    <div id="barHeader">
+      <span id="barDate"></span>
+      <span id="barRange"></span>
+    </div>
+    <div id="histWrap">
+      <canvas id="hist" width="1200" height="52"></canvas>
+      <div id="brush"></div>
+    </div>
+    <div id="timeAxis"></div>
+    <div id="controls">
+      <input type="range" id="t0" min="0" max="0" value="0" title="时间" />
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <button type="button" class="ctl" id="stepBack">|◀</button>
+        <button type="button" class="ctl" id="stepFwd">▶|</button>
+        <button type="button" class="ctl" id="play">▶</button>
+        <button type="button" class="ctl" id="reset">⟲</button>
+        <div id="speedWrap"><span>Speed</span><input type="range" id="speed" min="1" max="10" value="4" style="width:90px" /><span id="speedVal">1x</span></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="application/json" id="embed-meta">@@JSON_META@@</script>
+  <script type="application/json" id="embed-cells">@@JSON_CELLS@@</script>
+  <script type="application/json" id="embed-records">@@JSON_RECORDS@@</script>
+
+  <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js" crossorigin="anonymous"></script>
+  <script>
+    const meta = JSON.parse(document.getElementById('embed-meta').textContent);
+    const cellRings = JSON.parse(document.getElementById('embed-cells').textContent);
+    const records = JSON.parse(document.getElementById('embed-records').textContent);
+    const styleUrl = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+    const vmax = meta.vmax;
+    const slots = meta.time_slots_ms;
+    const timeLabels = meta.time_labels || [];
+    const n = slots.length;
+    const windowHours = Math.max(1, meta.window_hours || 1);
+    let idx = Math.min(meta.default_idx || 0, Math.max(0, n - windowHours));
+
+    const byT = new Map();
+    for (const r of records) {
+      if (!byT.has(r.t)) byT.set(r.t, []);
+      byT.get(r.t).push(r);
+    }
+
+    function fillColor(v) {
+      const t = Math.min(Math.max(v / vmax, 0), 1);
+      if (t <= 0.15) return '#f7fbff';
+      if (t <= 0.35) return '#c6dbef';
+      if (t <= 0.6) return '#6baed6';
+      if (t <= 0.85) return '#2171b5';
+      return '#08306b';
+    }
+
+    function fillColorExpr() {
+      return [
+        'interpolate', ['linear'], ['get', 'v'],
+        0, '#f7fbff',
+        vmax * 0.15, '#c6dbef',
+        vmax * 0.35, '#6baed6',
+        vmax * 0.6, '#2171b5',
+        vmax, '#08306b'
+      ];
+    }
+
+    function legendStops() {
+      const cuts = [0, vmax * 0.15, vmax * 0.35, vmax * 0.6, vmax];
+      const rows = [];
+      for (let i = 0; i < cuts.length - 1; i++) {
+        const lo = cuts[i], hi = cuts[i + 1];
+        rows.push({ lo, hi, color: fillColor((lo + hi) / 2) });
+      }
+      return rows;
+    }
+
+    function renderLegendRows(elId) {
+      const el = document.getElementById(elId);
+      el.innerHTML = legendStops().map((s) => {
+        const lo = s.lo < 0.01 ? '0' : s.lo.toFixed(2);
+        const hi = s.hi.toFixed(2);
+        return `<div class="leg-row"><span class="leg-swatch" style="background:${s.color}"></span><span>${lo} – ${hi}</span></div>`;
+      }).join('');
+    }
+    renderLegendRows('legendRowsL');
+    renderLegendRows('legendRowsR');
+
+    function sliceRows() {
+      const out = [];
+      for (let k = 0; k < windowHours; k++) {
+        const t = slots[idx + k];
+        if (t == null) continue;
+        const chunk = byT.get(t) || [];
+        out.push(...chunk);
+      }
+      return out;
+    }
+
+    function rowsToGeojson(rows, field) {
+      const acc = new Map();
+      for (const r of rows) {
+        const v = field === 'count' ? r.count : r.prediction;
+        acc.set(r.h3_index, (acc.get(r.h3_index) || 0) + v);
+      }
+      const features = [];
+      for (const [h3id, v] of acc) {
+        const ring = cellRings[h3id];
+        if (!ring) continue;
+        features.push({
+          type: 'Feature',
+          geometry: { type: 'Polygon', coordinates: [ring] },
+          properties: { v, h3: h3id }
+        });
+      }
+      return { type: 'FeatureCollection', features };
+    }
+
+    function labelAt(i) {
+      if (timeLabels[i]) return timeLabels[i];
+      return String(i);
+    }
+
+    function shortTimeAt(i) {
+      const s = labelAt(i);
+      return s.length >= 16 ? s.slice(11, 16) : s;
+    }
+
+    function updateHud() {
+      const i0 = idx;
+      const i1 = Math.min(idx + windowHours - 1, n - 1);
+      const hud = document.getElementById('centerHud');
+      if (windowHours <= 1) {
+        hud.innerHTML = `<span>${labelAt(i0)}</span>（数据时间 · 整点）`;
+      } else {
+        hud.innerHTML = `<span>${labelAt(i0)}</span> — <span>${labelAt(i1)}</span>`;
+      }
+      document.getElementById('barDate').textContent = meta.display_date || (labelAt(0).slice(0, 10) || '');
+      document.getElementById('barRange').textContent = windowHours <= 1 ? labelAt(i0) : `${labelAt(i0)} — ${labelAt(i1)}`;
+    }
+
+    const histCanvas = document.getElementById('hist');
+    const brush = document.getElementById('brush');
+    const t0slider = document.getElementById('t0');
+    const playBtn = document.getElementById('play');
+    const speedEl = document.getElementById('speed');
+    const speedValEl = document.getElementById('speedVal');
+    let playing = false;
+    let playTimer = null;
+
+    t0slider.max = String(Math.max(0, n - windowHours));
+    t0slider.value = String(idx);
+
+    function speedMult() { return (parseInt(speedEl.value, 10) || 4) / 4; }
+
+    function drawTimeAxis() {
+      const axis = document.getElementById('timeAxis');
+      axis.innerHTML = '';
+      if (n < 2) return;
+      const picks = [0, Math.floor(n / 4), Math.floor(n / 2), Math.floor(3 * n / 4), n - 1];
+      const seen = new Set();
+      for (const i of picks) {
+        if (seen.has(i)) continue;
+        seen.add(i);
+        const sp = document.createElement('span');
+        sp.style.left = (i / (n - 1)) * 100 + '%';
+        sp.textContent = shortTimeAt(i);
+        axis.appendChild(sp);
+      }
+    }
+
+    function drawHist() {
+      const ctx = histCanvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      const rect = histCanvas.getBoundingClientRect();
+      const w = Math.max(300, rect.width);
+      const h = 52;
+      histCanvas.width = w * dpr;
+      histCanvas.height = h * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      const totals = meta.hourly_actual || [];
+      const maxV = Math.max(...totals, 1e-6);
+      const bw = w / Math.max(n, 1);
+      for (let i = 0; i < n; i++) {
+        const bh = (totals[i] / maxV) * (h - 14);
+        ctx.fillStyle = i >= idx && i < idx + windowHours ? '#5b8fd9' : '#3d5a80';
+        ctx.fillRect(i * bw + 0.5, h - bh - 8, Math.max(1, bw - 1), bh);
+      }
+      ctx.strokeStyle = '#3c4043';
+      ctx.strokeRect(0, 0, w, h);
+    }
+
+    function brushLayout() {
+      const wPct = n === 0 ? 100 : Math.max((100 * windowHours) / n, 4);
+      const maxIdx = Math.max(0, n - windowHours);
+      if (windowHours >= n || maxIdx === 0) {
+        brush.style.left = '0%';
+        brush.style.width = '100%';
+      } else {
+        brush.style.left = (idx / maxIdx) * (100 - wPct) + '%';
+        brush.style.width = wPct + '%';
+      }
+    }
+
+    function initMap(containerId, sourceId, layerId) {
+      const map = new maplibregl.Map({
+        container: containerId,
+        style: styleUrl,
+        center: meta.center,
+        zoom: meta.zoom,
+        bearing: meta.bearing || 0,
+        attributionControl: true
+      });
+      map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
+      map.on('load', () => {
+        map.addSource(sourceId, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+        map.addLayer({
+          id: layerId,
+          type: 'fill',
+          source: sourceId,
+          paint: {
+            'fill-color': fillColorExpr(),
+            'fill-opacity': 0.85,
+            'fill-outline-color': '#1e3a5f'
+          }
+        });
+        redraw();
+      });
+      return map;
+    }
+
+    const mapL = initMap('mapL', 'hexL', 'fillL');
+    const mapR = initMap('mapR', 'hexR', 'fillR');
+    let mapsReady = 0;
+
+    function redraw() {
+      const rows = sliceRows();
+      const gjA = rowsToGeojson(rows, 'count');
+      const gjP = rowsToGeojson(rows, 'prediction');
+      if (mapL.isStyleLoaded()) mapL.getSource('hexL').setData(gjA);
+      if (mapR.isStyleLoaded()) mapR.getSource('hexR').setData(gjP);
+      updateHud();
+      brushLayout();
+      drawHist();
+      t0slider.value = String(idx);
+    }
+
+    mapL.on('load', () => { mapsReady++; if (mapsReady === 2) redraw(); });
+    mapR.on('load', () => { mapsReady++; if (mapsReady === 2) redraw(); });
+
+    let silent = false;
+    function syncMaps(a, b) {
+      a.on('move', () => {
+        if (silent) return;
+        silent = true;
+        b.jumpTo({ center: a.getCenter(), zoom: a.getZoom(), bearing: a.getBearing(), pitch: a.getPitch() });
+        silent = false;
+      });
+    }
+    syncMaps(mapL, mapR);
+    syncMaps(mapR, mapL);
+
+    function tickPlay() {
+      const maxIdx = Math.max(0, n - windowHours);
+      idx = idx >= maxIdx ? 0 : idx + 1;
+      redraw();
+    }
+    function startPlay() {
+      if (playTimer) clearInterval(playTimer);
+      if (!playing) return;
+      playTimer = setInterval(tickPlay, Math.round(900 / speedMult()));
+    }
+
+    t0slider.addEventListener('input', () => {
+      idx = parseInt(t0slider.value, 10) || 0;
+      redraw();
+    });
+    let dragHist = false;
+    histCanvas.addEventListener('mousedown', () => {
+      dragHist = true;
+      playing = false;
+      playBtn.textContent = '▶';
+      if (playTimer) clearInterval(playTimer);
+      playTimer = null;
+    });
+    window.addEventListener('mouseup', () => { dragHist = false; });
+    function scrubFromEvent(e) {
+      const rect = histCanvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;
+      const maxIdx = Math.max(0, n - windowHours);
+      idx = Math.max(0, Math.min(maxIdx, Math.round(x * maxIdx)));
+      redraw();
+    }
+    histCanvas.addEventListener('mousemove', (e) => { if (dragHist) scrubFromEvent(e); });
+    histCanvas.addEventListener('click', scrubFromEvent);
+    playBtn.addEventListener('click', () => {
+      playing = !playing;
+      playBtn.textContent = playing ? '⏸' : '▶';
+      if (playTimer) clearInterval(playTimer);
+      playTimer = null;
+      if (playing) startPlay();
+    });
+    document.getElementById('reset').addEventListener('click', () => { idx = 0; redraw(); });
+    document.getElementById('stepBack').addEventListener('click', () => { idx = Math.max(0, idx - 1); redraw(); });
+    document.getElementById('stepFwd').addEventListener('click', () => {
+      idx = Math.min(Math.max(0, n - windowHours), idx + 1);
+      redraw();
+    });
+    speedEl.addEventListener('input', () => {
+      speedValEl.textContent = speedMult().toFixed(1) + 'x';
+      if (playing) startPlay();
+    });
+
+    drawTimeAxis();
+    drawHist();
+    brushLayout();
+    updateHud();
+    speedValEl.textContent = speedMult().toFixed(1) + 'x';
+    window.addEventListener('resize', () => { drawHist(); drawTimeAxis(); brushLayout(); mapL.resize(); mapR.resize(); });
+  </script>
+</body>
+</html>
