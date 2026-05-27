@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>订单时空 · 3D H3</title>
+  <script src="https://cdn.jsdelivr.net/npm/h3-js@4.1.0/dist/h3-js.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/deck.gl@9.0.27/dist.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+  <style>
+    html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; background: #0a0a0f; color: #e8eaed; overflow: hidden; }
+    #canvasContainer { position: absolute; top: 0; left: 0; right: 0; bottom: 168px; background: linear-gradient(180deg, #0d0d12 0%, #0a0a0f 100%); }
+    #mapBase {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 0;
+    }
+    #deckCanvas { position: relative; z-index: 1; pointer-events: none; }
+    #bar {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 168px;
+      background: linear-gradient(180deg, #12121a 0%, #0a0a0f 100%);
+      border-top: 1px solid #252530;
+      padding: 12px 16px 14px;
+      box-sizing: border-box;
+      z-index: 10;
+    }
+    #centerHud {
+      position: absolute; left: 50%; bottom: 188px; transform: translateX(-50%);
+      z-index: 100; text-align: center; pointer-events: none;
+      padding: 10px 20px; border-radius: 8px;
+      background: rgba(10, 10, 15, 0.85); border: 1px solid rgba(60, 64, 70, 0.6);
+      font-size: 14px; color: #e8eaed;
+      backdrop-filter: blur(8px);
+    }
+    #centerHud .date { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+    #centerHud .timeRange { color: #9aa0a6; font-size: 13px; }
+    #legend {
+      position: absolute; top: 16px; right: 16px; width: 172px; z-index: 100;
+      background: rgba(18, 18, 26, 0.95); border: 1px solid #2d2f36; border-radius: 4px;
+      padding: 12px; font-size: 11px; color: #9aa0a6;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    #legend h3 { margin: 0 0 8px; font-size: 12px; font-weight: 600; color: #e8eaed; border-bottom: 1px solid #2d2f36; padding-bottom: 8px; }
+    .legend-metric { font-size: 12px; font-weight: 600; color: #e8eaed; margin: 0 0 8px; padding-bottom: 8px; border-bottom: 1px solid #2d2f36; }
+    .leg-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .leg-swatch { width: 14px; height: 14px; border-radius: 2px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.1); }
+    .legend-note { margin-top: 8px; padding-top: 8px; border-top: 1px solid #2d2f36; font-size: 10px; color: #80868b; }
+    #mode {
+      position: absolute; top: 16px; left: 16px; z-index: 100;
+      background: rgba(18, 18, 26, 0.95); border: 1px solid #2d2f36; border-radius: 4px;
+      padding: 8px 12px; font-size: 12px;
+    }
+    #mode label { margin-right: 14px; cursor: pointer; color: #bdc1c6; }
+    #mode input[type="radio"] { margin-right: 6px; accent-color: #4a9eff; }
+    #mapTools { position: absolute; top: 64px; right: 16px; z-index: 100; display: flex; flex-direction: column; gap: 4px; }
+    #mapTools button {
+      width: 36px; height: 36px; background: rgba(18, 18, 26, 0.95); border: 1px solid #2d2f36;
+      border-radius: 4px; color: #e8eaed; font-size: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #mapTools button:hover { background: rgba(30, 30, 40, 0.95); }
+    #barHeader { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 6px; font-size: 12px; color: #9aa0a6; }
+    #histWrap { height: 56px; margin: 4px 0; position: relative; }
+    #hist { width: 100%; height: 56px; display: block; cursor: pointer; border-radius: 4px; background: #12121a; }
+    #brush {
+      position: absolute; top: 0; bottom: 24px; left: 0%; width: 30%;
+      border: 1px solid rgba(255,255,255,0.8); border-radius: 2px; pointer-events: none;
+      box-sizing: border-box;
+      background: rgba(74, 158, 255, 0.1);
+    }
+    #timeAxis { height: 20px; position: relative; font-size: 11px; color: #80868b; }
+    #timeAxis span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+    #controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; justify-content: space-between; }
+    button.ctl {
+      background: #1a1a24; color: #e8eaed; border: 1px solid #2d2f36; border-radius: 4px;
+      padding: 6px 12px; font-size: 12px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      gap: 4px;
+    }
+    button.ctl:hover { background: #22222e; }
+    #speedWrap { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #9aa0a6; }
+    #t0 { flex: 1; min-width: 180px; max-width: 450px; height: 6px; -webkit-appearance: none; appearance: none; background: #1a1a24; border-radius: 3px; outline: none; }
+    #t0::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; background: #4a9eff; border-radius: 50%; cursor: pointer; }
+    #speed { width: 100px; height: 4px; -webkit-appearance: none; appearance: none; background: #1a1a24; border-radius: 2px; outline: none; }
+    #speed::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 12px; height: 12px; background: #4a9eff; border-radius: 50%; cursor: pointer; }
+    #play { min-width: 40px; }
+  </style>
+</head>
+<body>
+  <div id="canvasContainer">
+    <div id="mapBase"></div>
+    <canvas id="deckCanvas"></canvas>
+  </div>
+  <div id="centerHud">
+    <div class="date" id="hudDate">11/01/2016</div>
+    <div class="timeRange" id="hudTime">10:56:22 AM – 11:09:15 AM</div>
+  </div>
+  <div id="mode">
+    <label><input type="radio" name="m" value="count" checked /> 实测 count</label>
+    <label><input type="radio" name="m" value="prediction" /> 预测 prediction</label>
+  </div>
+  <div id="legend">
+    <h3>Layer Legend</h3>
+    <div id="legendMetric" class="legend-metric">count</div>
+    <div id="legendRows"></div>
+    <div class="legend-note" id="legendNote">Height Scale by count</div>
+  </div>
+  <div id="mapTools">
+    <button type="button" id="btn3d" title="2D/3D">3D</button>
+  </div>
+  <div id="bar">
+    <div id="barHeader"><span id="barDate"></span><span id="barRange"></span></div>
+    <div id="histWrap">
+      <canvas id="hist" width="1400" height="56"></canvas>
+      <div id="brush"></div>
+    </div>
+    <div id="timeAxis"></div>
+    <div id="controls">
+      <input type="range" id="t0" min="0" max="0" value="0" title="时间" />
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <button type="button" class="ctl" id="stepBack">|◀</button>
+        <button type="button" class="ctl" id="stepFwd">▶|</button>
+        <button type="button" class="ctl" id="play">▶</button>
+        <button type="button" class="ctl" id="reset">⟲</button>
+        <div id="speedWrap"><span>Speed</span><input type="range" id="speed" min="1" max="10" value="4" /><span id="speedVal">1x</span></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="application/json" id="embed-meta">@@EMBED_META@@</script>
+  <script type="application/json" id="embed-data">@@EMBED_DATA@@</script>
+
+  <script>
+    function showError(title, detail) {
+      const el = document.getElementById('canvasContainer');
+      const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+      el.innerHTML =
+        '<div style="padding:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#f85149;font:14px/1.6 system-ui,sans-serif">' +
+        '<strong style="font-size:16px;margin-bottom:16px">' + esc(title) + '</strong>' +
+        '<pre style="color:#9aa0a6;white-space:pre-wrap;word-break:break-all;font-size:12px;max-width:600px">' + esc(detail) + '</pre>' +
+        '</div>';
+    }
+
+    const rawMeta = document.getElementById('embed-meta').textContent.trim();
+    const rawData = document.getElementById('embed-data').textContent.trim();
+    if (rawMeta.includes('@@EMBED') || rawData.includes('@@EMBED')) {
+      showError('数据未嵌入', '请运行: python visualization/scripts/build_spacetime_deck_3d.py');
+      throw new Error('placeholder');
+    }
+    let meta;
+    let FULL;
+    try {
+      meta = JSON.parse(rawMeta);
+      FULL = JSON.parse(rawData);
+    } catch (e) {
+      showError('JSON 解析失败', e && e.message ? e.message : String(e));
+      throw e;
+    }
+
+    const slots = meta.time_slots_ms || [];
+    const n = slots.length;
+    const windowHours = meta.window_hours || 1;
+    const hourMs = 3600000;
+    let idx = 0;
+    let mode = 'count';
+    let playing = false;
+    let playTimer = null;
+    let pitch3d = true;
+
+    let countMax = meta.count_max;
+    let predictionMax = meta.prediction_max;
+    if (countMax == null || predictionMax == null) {
+      let cm = 1, pm = 1;
+      for (const d of FULL) {
+        cm = Math.max(cm, d.count);
+        pm = Math.max(pm, d.prediction);
+      }
+      if (countMax == null) countMax = cm;
+      if (predictionMax == null) predictionMax = pm;
+    }
+
+    const sums = (meta.hourly_totals || []).map(Number);
+    while (sums.length < n) sums.push(0);
+
+    const BIN = [
+      { max: 1, rgb: [247, 251, 255] },
+      { max: 2, rgb: [222, 235, 247] },
+      { max: 5, rgb: [158, 202, 225] },
+      { max: 15, rgb: [49, 130, 189] },
+      { max: Infinity, rgb: [8, 81, 156] },
+    ];
+
+    function elevOf(d) {
+      const v = mode === 'count' ? d.count : d.prediction;
+      return Math.max(0, v);
+    }
+    function gMax() {
+      return mode === 'count' ? countMax : predictionMax;
+    }
+    function fillColor(v) {
+      if (v < 1) return [247, 251, 255, 220];
+      if (v < 2) return [222, 235, 247, 230];
+      if (v < 5) return [158, 202, 225, 240];
+      if (v < 15) return [49, 130, 189, 250];
+      return [8, 81, 156, 255];
+    }
+    function sliceData() {
+      const tStart = slots[idx];
+      const tEnd = slots[Math.min(idx + windowHours - 1, n - 1)] + hourMs;
+      return FULL.filter((d) => d.t >= tStart && d.t < tEnd);
+    }
+    function renderLegend(gm) {
+      const field = mode === 'count' ? 'count' : 'prediction';
+      document.getElementById('legendMetric').textContent = field;
+      document.getElementById('legendNote').textContent = 'Height Scale by ' + field;
+      const top = Math.max(Number(gm) || 0, 15);
+      const labels = ['1.00 to 1.00', '1.00 to 2.00', '2.00 to 5.00', '5.00 to 15.00', '15.00 to ' + top.toFixed(2)];
+      const rows = document.getElementById('legendRows');
+      rows.innerHTML = '';
+      for (let i = 0; i < 5; i++) {
+        const c = BIN[i].rgb;
+        const el = document.createElement('div');
+        el.className = 'leg-row';
+        el.innerHTML = '<div class="leg-swatch" style="background:rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')"></div><span style="color:#bdc1c6;font-size:10px">' + labels[i] + '</span>';
+        rows.appendChild(el);
+      }
+    }
+    function updateHud() {
+      const tA = new Date(slots[idx]);
+      const tB = new Date(slots[Math.min(idx + windowHours - 1, n - 1)] + hourMs);
+      const dateFmt = new Intl.DateTimeFormat('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+      const timeFmt = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+      const d = meta.display_date || dateFmt.format(tA);
+      const r = timeFmt.format(tA) + ' – ' + timeFmt.format(tB);
+      document.getElementById('hudDate').textContent = d;
+      document.getElementById('hudTime').textContent = r;
+      document.getElementById('barDate').textContent = d;
+      document.getElementById('barRange').textContent = r;
+    }
+    const histCanvas = document.getElementById('hist');
+    const brush = document.getElementById('brush');
+    const t0slider = document.getElementById('t0');
+    const playBtn = document.getElementById('play');
+    const speedEl = document.getElementById('speed');
+    const speedValEl = document.getElementById('speedVal');
+    const timeAxisEl = document.getElementById('timeAxis');
+
+    t0slider.max = Math.max(0, n - windowHours);
+
+    function speedMult() {
+      const s = parseInt(speedEl.value, 10) || 4;
+      return 0.2 + ((s - 1) / 9) * 1.2;
+    }
+    function drawTimeAxis() {
+      timeAxisEl.innerHTML = '';
+      const tickHours = [0, 3, 6, 9, 12, 15, 18, 21];
+      const fmt = new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: true });
+      for (const th of tickHours) {
+        let best = -1, bestDiff = 999;
+        for (let i = 0; i < slots.length; i++) {
+          const h = new Date(slots[i]).getHours();
+          const diff = Math.abs(h - th);
+          if (diff < bestDiff) {
+            bestDiff = diff;
+            best = i;
+          }
+        }
+        if (best >= 0) {
+          const el = document.createElement('span');
+          el.textContent = fmt.format(new Date(slots[best]));
+          el.style.left = ((best / (slots.length - 1)) * 100) + '%';
+          timeAxisEl.appendChild(el);
+        }
+      }
+    }
+    function drawHist() {
+      const ctx = histCanvas.getContext('2d');
+      ctx.clearRect(0, 0, histCanvas.width, histCanvas.height);
+      const maxSum = Math.max(...sums, 1);
+      const w = histCanvas.width / n;
+      for (let i = 0; i < n; i++) {
+        const h = (sums[i] / maxSum) * (histCanvas.height - 6);
+        const x = i * w;
+        const alpha = i >= idx && i < idx + windowHours ? 0.9 : 0.3;
+        const g = ctx.createLinearGradient(x, histCanvas.height, x, histCanvas.height - h);
+        g.addColorStop(0, `rgba(49, 130, 189, ${alpha})`);
+        g.addColorStop(1, `rgba(158, 202, 225, ${alpha})`);
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.roundRect(x, histCanvas.height - h, w - 1.5, h, 3);
+        ctx.fill();
+      }
+    }
+    function updateBrush() {
+      if (n <= 1) return;
+      const left = (idx / (n - windowHours)) * 100;
+      const width = ((windowHours - 0.5) / (n - 1)) * 100;
+      brush.style.left = left + '%';
+      brush.style.width = Math.max(width, 3) + '%';
+    }
+
+    let deckInstance;
+    let mapInstance;
+
+    function mapViewState() {
+      if (!mapInstance) {
+        return {
+          longitude: meta.center_lng || 114.3,
+          latitude: meta.center_lat || 30.5,
+          zoom: meta.zoom || 10.8,
+          pitch: meta.pitch || 52,
+          bearing: meta.bearing || 22,
+        };
+      }
+      const center = mapInstance.getCenter();
+      return {
+        longitude: center.lng,
+        latitude: center.lat,
+        zoom: mapInstance.getZoom(),
+        pitch: mapInstance.getPitch(),
+        bearing: mapInstance.getBearing(),
+      };
+    }
+
+    function syncDeckView() {
+      if (!deckInstance) return;
+      const viewState = mapViewState();
+      pitch3d = viewState.pitch > 10;
+      document.getElementById('btn3d').textContent = pitch3d ? '2D' : '3D';
+      deckInstance.setProps({ viewState });
+    }
+
+    function makeBaseMapStyle() {
+      return 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+    }
+
+    function initDeck() {
+      const canvas = document.getElementById('deckCanvas');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight - 168;
+      canvas.style.background = 'transparent';
+
+      mapInstance = new maplibregl.Map({
+        container: 'mapBase',
+        style: makeBaseMapStyle(),
+        center: [meta.center_lng || 114.3, meta.center_lat || 30.5],
+        zoom: meta.zoom || 10.8,
+        pitch: meta.pitch || 52,
+        bearing: meta.bearing || 22,
+        interactive: true,
+        attributionControl: false,
+      });
+
+      mapInstance.on('load', () => {
+        console.log('Initializing deck.gl with map-backed viewState:', mapViewState());
+        console.log('Available deck modules:', Object.keys(deck));
+        console.log('Is H3HexagonLayer available?', !!deck.H3HexagonLayer);
+        console.log('Sample data:', FULL.slice(0, 3));
+
+        deckInstance = new deck.DeckGL({
+          canvas: canvas,
+          initialViewState: mapViewState(),
+          controller: false,
+          parameters: {
+            clearColor: [0, 0, 0, 0],
+          },
+          layers: [createHexLayer()],
+        });
+
+        syncDeckView();
+        mapInstance.on('move', syncDeckView);
+        mapInstance.on('zoom', syncDeckView);
+        mapInstance.on('rotate', syncDeckView);
+        mapInstance.on('pitch', syncDeckView);
+      });
+
+      drawHist();
+      drawTimeAxis();
+      updateHud();
+      renderLegend(gMax());
+    }
+
+    function createHexLayer() {
+      const rawData = sliceData();
+      console.log('Raw data length:', rawData ? rawData.length : 0);
+      if (rawData && rawData.length > 0) {
+        console.log('First data item:', rawData[0]);
+        console.log('H3 index exists:', !!rawData[0].h3_index);
+      }
+      
+      if (!rawData || rawData.length === 0) {
+        return new deck.ScatterplotLayer({ id: 'empty', data: [] });
+      }
+
+      const elevationScale = Math.max(1, meta.elevation_scale || 50);
+      const maxVal = Math.max(1, gMax());
+
+      return new deck.H3HexagonLayer({
+        id: 'h3-hex',
+        data: rawData,
+        pickable: true,
+        wireframe: false,
+        filled: true,
+        extruded: true,
+        elevationScale,
+        getHexagon: d => d.h3_index,
+        getFillColor: d => fillColor(elevOf(d)),
+        getElevation: d => Math.max(0, elevOf(d)),
+        elevationRange: [0, maxVal * 1.2],
+        material: {
+          ambient: 0.3,
+          diffuse: 0.8,
+          specular: 0.3,
+          shininess: 32,
+        },
+        updateTriggers: {
+          getFillColor: [mode],
+          getElevation: [mode],
+        },
+      });
+    }
+
+    function cos(deg) {
+      return Math.cos(deg * Math.PI / 180);
+    }
+
+    function updateLayer() {
+      if (!deckInstance) return;
+      deckInstance.setProps({ layers: [createHexLayer()] });
+    }
+
+    function setIdx(i) {
+      idx = Math.max(0, Math.min(i, n - windowHours));
+      t0slider.value = idx;
+      updateLayer();
+      updateBrush();
+      updateHud();
+      drawHist();
+    }
+
+    function setMode(m) {
+      mode = m;
+      renderLegend(gMax());
+      updateLayer();
+    }
+
+    function toggle3d() {
+      pitch3d = !pitch3d;
+      if (mapInstance) {
+        mapInstance.easeTo({ pitch: pitch3d ? (meta.pitch || 52) : 0, duration: 350 });
+      }
+      document.getElementById('btn3d').textContent = pitch3d ? '2D' : '3D';
+    }
+
+    function togglePlay() {
+      playing = !playing;
+      playBtn.textContent = playing ? '❚❚' : '▶';
+      if (playing) {
+        runPlay();
+      } else if (playTimer) {
+        clearTimeout(playTimer);
+        playTimer = null;
+      }
+    }
+
+    function runPlay() {
+      if (!playing) return;
+      setIdx(idx + 1);
+      if (idx >= n - windowHours) {
+        playing = false;
+        playBtn.textContent = '▶';
+        return;
+      }
+      playTimer = setTimeout(runPlay, 800 / speedMult());
+    }
+
+    t0slider.addEventListener('input', () => setIdx(parseInt(t0slider.value, 10)));
+    document.getElementById('stepBack').addEventListener('click', () => setIdx(idx - 1));
+    document.getElementById('stepFwd').addEventListener('click', () => setIdx(idx + 1));
+    document.getElementById('play').addEventListener('click', togglePlay);
+    document.getElementById('reset').addEventListener('click', () => { setIdx(0); });
+    document.getElementById('speed').addEventListener('input', () => {
+      speedValEl.textContent = speedMult().toFixed(1) + 'x';
+    });
+    document.getElementById('btn3d').addEventListener('click', toggle3d);
+    document.querySelectorAll('input[name="m"]').forEach(el => {
+      el.addEventListener('change', () => setMode(el.value));
+    });
+
+    histCanvas.addEventListener('click', (e) => {
+      const rect = histCanvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const ratio = x / rect.width;
+      setIdx(Math.floor(ratio * (n - windowHours)));
+    });
+
+    window.addEventListener('resize', () => {
+      if (deckInstance) {
+        const canvas = document.getElementById('deckCanvas');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight - 168;
+        deckInstance.setProps({ width: canvas.width, height: canvas.height });
+      }
+      if (mapInstance) {
+        mapInstance.resize();
+      }
+    });
+
+    initDeck();
+  </script>
+</body>
+</html>

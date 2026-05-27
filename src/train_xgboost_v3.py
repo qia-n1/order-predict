@@ -70,6 +70,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--high-count-threshold", type=float, default=4.0, help="High-count threshold for metrics")
     parser.add_argument("--very-high-count-threshold", type=float, default=8.0, help="Very-high-count threshold for weighting")
     parser.add_argument("--reuse-stage1-artifacts", action="store_true", help="Reuse saved stage-1 model and embeddings when available")
+    parser.add_argument("--test-start-date", type=str, default=None, help="Date boundary for test split, e.g. '2015-06-24'. Overrides ratio-based split.")
     return parser.parse_args()
 
 
@@ -329,12 +330,12 @@ def collect_metrics(df: pd.DataFrame, pred: np.ndarray, high_count_threshold: fl
     }
 
 
-def load_or_fetch_weather_features(cache_path: Path, start_time: pd.Timestamp, end_time: pd.Timestamp) -> pd.DataFrame:
+def load_or_fetch_weather_features(cache_path: Path, start_time: pd.Timestamp, end_time: pd.Timestamp, time_slots: pd.Series) -> pd.DataFrame:
     if cache_path.exists():
         weather = pd.read_csv(cache_path)
         weather["time_slot"] = pd.to_datetime(weather["time_slot"])
         return weather
-    weather = fetch_weather_features(start_time, end_time)
+    weather = fetch_weather_features(start_time, end_time, time_slots)
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     weather.to_csv(cache_path, index=False)
     return weather
@@ -359,7 +360,7 @@ def main() -> None:
 
     start_time = pd.Timestamp(panel["time_slot"].min())
     end_time = pd.Timestamp(panel["time_slot"].max())
-    weather = load_or_fetch_weather_features(args.weather_cache, start_time, end_time)
+    weather = load_or_fetch_weather_features(args.weather_cache, start_time, end_time, panel["time_slot"])
     holidays = build_holiday_features(panel["time_slot"])
 
     panel = add_time_features(panel)
@@ -397,7 +398,7 @@ def main() -> None:
     ]
     panel = panel.dropna(subset=required_history).reset_index(drop=True)
 
-    train_df, valid_df, test_df = make_splits(panel, args.train_ratio, args.valid_ratio)
+    train_df, valid_df, test_df = make_splits(panel, args.train_ratio, args.valid_ratio, args.test_start_date)
 
     count_pivot = sequence_panel.pivot(index="time_slot", columns=SPATIAL_COL, values="order_count").sort_index().sort_index(axis=1)
     time_slots = count_pivot.index.tolist()
@@ -449,6 +450,14 @@ def main() -> None:
         train_embeddings = read_embeddings(train_embedding_path, args.embedding_dim)
         valid_embeddings = read_embeddings(valid_embedding_path, args.embedding_dim)
         test_embeddings = read_embeddings(test_embedding_path, args.embedding_dim)
+        history_path = output_dir / "stage1_history.csv"
+        if history_path.exists():
+            history_df = pd.read_csv(history_path)
+            stage1_history = history_df.to_dict("records")
+            if not history_df.empty and "valid_mae" in history_df.columns:
+                best_idx = int(history_df["valid_mae"].idxmin())
+                best_epoch = int(history_df.loc[best_idx, "epoch"])
+                best_valid_mae = float(history_df.loc[best_idx, "valid_mae"])
     else:
         best_state = None
         patience_left = args.patience

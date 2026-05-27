@@ -141,6 +141,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--freq", type=str, default="1h")
     parser.add_argument("--train-ratio", type=float, default=0.7)
     parser.add_argument("--valid-ratio", type=float, default=0.15)
+    parser.add_argument("--test-start-date", type=str, default=None, help="Date boundary for test split, e.g. '2014-06-24'. Overrides ratio-based split.")
     parser.add_argument("--num-boost-round", type=int, default=350)
     parser.add_argument("--early-stopping-rounds", type=int, default=40)
     parser.add_argument("--weight-zero", type=float, default=1.0)
@@ -201,6 +202,10 @@ def prepare_model_matrix(df: pd.DataFrame, weights: np.ndarray | None = None) ->
     return xgb.DMatrix(matrix, label=labels, weight=weights, feature_names=FEATURE_COLUMNS, nthread=1)
 
 
+def split_panel(panel: pd.DataFrame, args: argparse.Namespace) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    return make_splits(panel, args.train_ratio, args.valid_ratio, args.test_start_date)
+
+
 def add_metric_block(prefix: str, df: pd.DataFrame, pred: np.ndarray, metrics: dict[str, float | int], threshold: float) -> None:
     pred = np.clip(pred, 0.0, None)
     nonzero_mask = df["order_count"].to_numpy() > 0
@@ -237,7 +242,7 @@ def train_one_resolution(orders: pd.DataFrame, resolution: int, args: argparse.N
     panel[["is_holiday", "is_month_start", "is_month_end"]] = panel[["is_holiday", "is_month_start", "is_month_end"]].fillna(0).astype(int)
     panel = panel.dropna(subset=REQUIRED_HISTORY).reset_index(drop=True)
 
-    train_df, valid_df, test_df = make_splits(panel, args.train_ratio, args.valid_ratio)
+    train_df, valid_df, test_df = split_panel(panel, args)
     train_df = add_target_encoding(train_df, train_df)
     valid_df = add_target_encoding(train_df, valid_df)
     test_df = add_target_encoding(train_df, test_df)

@@ -43,3 +43,8 @@ def h3_center_latlng(h3_index: str) -> tuple[float, float]:
 
 def h3_ring(h3_index: str, k: int) -> list[str]:
     return sorted(h3.grid_disk(h3_index, k))
+
+
+def h3_to_geo_boundary(h3_index: str) -> list[list[float]]:
+    boundary = h3.cell_to_boundary(h3_index)
+    return [[float(lat), float(lng)] for lat, lng in boundary]
